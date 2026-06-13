@@ -146,6 +146,12 @@ Each view from the main plan gets a dedicated screen with interaction tailored t
 | Dependency Graph | Service graph with directional edges; blast radius highlighting on selection |
 | Impact Assessment | Wizard-style: select trigger document → view affected graph → export report |
 | Gap Analysis | Domain concepts with coverage indicators; drill to see what's missing and why |
+| Value Stream Map | Swimlane visualisation of stages; click stage to see owning context and services; highlight bottlenecks |
+| Stakeholder Map | Matrix/radar of actors by interest vs influence; filter by scope (initiative/value stream); link to engagement actions |
+| Value Impact Map | Tree/flow from goal → actor → impact → deliverable; click node to see linked roadmap items |
+| Product Roadmap | Timeline view of planned capabilities per sub-domain; drag to re-sequence; highlight dependency conflicts |
+| North Star Roadmap | Cross-domain Gantt/timeline; milestone alignment visualisation; dependency arrows across sub-domains; click milestone for detail |
+| Strategic Initiative Dashboard | KPI cards, progress bars, RAG status per initiative; drill to value stream metrics and roadmap status |
 
 #### 4. Administration Console
 

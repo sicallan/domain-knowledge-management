@@ -41,6 +41,12 @@ Decisions are the highest-value points in any domain. They are where regulation 
 
 ## The Three-Layer Domain Model
 
+**Layer 0 — Strategic Alignment (Organisational Purpose)**
+- Strategic initiatives, value streams, stakeholder maps, value impact maps, product roadmaps, north star roadmaps
+- The "why" layer: connects domain knowledge to business strategy, investment decisions, and cross-domain coordination
+- Scoped at business unit level, coordinating across sub-domains
+- See [Strategic Alignment & Coordination](#strategic-alignment--coordination) for full detail
+
 **Layer 1 — Pure Domain (Canonical Truth)**
 - Domain-Driven Design concepts: domains, subdomains, bounded contexts, aggregates, entities, value objects, domain events, commands, policies, invariants, decisions
 - Language that business and architects share; vendor and technology agnostic
@@ -58,6 +64,70 @@ Decisions are the highest-value points in any domain. They are where regulation 
 - Systems, services, containers, components, data stores, integrations, infrastructure
 - Runtime behaviour: orchestration steps, events emitted/consumed, rules evaluated, decisions made, reference data accessed, invariants enforced
 - Operational evidence: logs, traces, metrics, runbooks, change records
+
+---
+
+## Strategic Alignment & Coordination
+
+The domain model does not exist in a vacuum. It must connect upward to strategic intent and coordinate horizontally across sub-domains within a business unit. This section defines the strategic overlay that binds domain knowledge to organisational purpose.
+
+### Strategic Concepts
+
+| Concept | Purpose |
+|---|---|
+| **Strategic Initiative** | A time-bound, funded programme of work aligned to business strategy. Initiatives decompose into outcomes delivered across sub-domains. |
+| **Value Stream** | An end-to-end sequence of activities that delivers value to a customer or stakeholder. Cuts across bounded contexts and sub-domains. |
+| **Value Stream Stage** | A discrete phase within a value stream (e.g., onboard, transact, settle, report). Each stage maps to one or more bounded contexts. |
+| **Stakeholder Map** | A structured view of actors (people, teams, organisations, systems) who influence, are affected by, or depend on a value stream, initiative, or sub-domain. Captures interest, influence, and engagement model. |
+| **Value Impact Map** | A goal-oriented model linking strategic goals → actors → impacts (behaviour changes) → deliverables → measurable outcomes. Provides traceability from strategy to delivery. |
+| **Product Roadmap** | A time-phased plan of features/capabilities for a specific sub-domain or product, aligned to strategic initiatives and value stream improvements. |
+| **North Star Roadmap** | A cross-sub-domain, business-unit-level coordination plan that synchronises multiple product roadmaps toward shared strategic outcomes. Expresses sequencing, dependencies, and milestone alignment across teams. |
+
+### How Strategic Concepts Relate to the Domain Model
+
+```
+Strategic Initiative
+    ├── targets → Value Stream (improvement area)
+    ├── decomposes into → North Star Roadmap milestones
+    └── funded by → Business Unit
+
+North Star Roadmap
+    ├── coordinates → Product Roadmap (per sub-domain)
+    ├── aligned to → Strategic Initiative
+    └── sequences → cross-domain milestones
+
+Product Roadmap
+    ├── plans delivery of → BusinessCapability / DomainConcept (L1)
+    ├── scoped to → BoundedContext / Subdomain
+    └── informed by → Value Impact Map
+
+Value Stream
+    ├── composed of → Value Stream Stages
+    ├── maps to → BoundedContext (per stage)
+    ├── realised by → Service / OrchestrationFlow (L3)
+    └── measured by → Value metrics
+
+Value Impact Map
+    ├── traces → Strategic Goal → Actor → Impact → Deliverable
+    ├── references → Stakeholder Map actors
+    └── justifies → Product Roadmap items
+
+Stakeholder Map
+    ├── scoped to → Value Stream / Initiative / Subdomain
+    ├── identifies → actors with influence/interest
+    └── informs → governance, communication, prioritisation
+```
+
+### Why This Matters
+
+Without strategic alignment, the knowledge graph answers "what exists?" and "what is affected?" but cannot answer:
+- "Why are we building this?" (traceability to strategic intent)
+- "Who cares about this change?" (stakeholder impact)
+- "What is the sequence and coordination plan?" (roadmap alignment)
+- "How does this sub-domain's work contribute to the bigger picture?" (north star alignment)
+- "Where does value flow and where are the bottlenecks?" (value stream visibility)
+
+These are the questions that executives, portfolio managers, and business unit leads ask daily.
 
 ---
 
@@ -85,6 +155,13 @@ Each inventory is a named, versioned, typed catalogue of entities with defined s
 | `Integration` | L3 | source, target, protocol, data contract |
 | `RegulatoryRequirement` | L1/L2 | regulation, article, obligation type, affected domain concepts |
 | `PolicyStatement` | L1/L2 | statement, regulation source, enforcement mechanism |
+| `StrategicInitiative` | L0 (Strategy) | name, business unit, strategic goal, timeframe, funded status, target value streams, success metrics |
+| `ValueStream` | L0/L1 | name, customer/stakeholder, stages, owning business unit, value metrics, current maturity |
+| `ValueStreamStage` | L0/L1 | name, sequence, owning bounded context(s), inputs, outputs, cycle time target |
+| `StakeholderMap` | L0 | scope (initiative/value stream/subdomain), actors, interest level, influence level, engagement model |
+| `ValueImpactMap` | L0 | strategic goal, target actors, desired impacts, planned deliverables, measurable outcomes |
+| `ProductRoadmap` | L0/L1 | name, owning subdomain/product, time horizon, planned capabilities, aligned initiatives |
+| `NorthStarRoadmap` | L0 | name, business unit, coordinated subdomains, milestones, cross-domain dependencies, aligned initiatives |
 
 ---
 
@@ -125,6 +202,20 @@ Each inventory is a named, versioned, typed catalogue of entities with defined s
 - `obliges(RegulatoryRequirement → DomainConcept/BusinessCapability)`
 - `satisfiedBy(RegulatoryRequirement → ProjectSpec/Rule/PolicyStatement/Decision)`
 - `exposes(Service → RegulatoryRequirement)` (surface area)
+
+### Strategic / Coordination
+
+- `targets(StrategicInitiative → ValueStream)` — which value streams an initiative aims to improve
+- `funds(StrategicInitiative → ProductRoadmap)` — what delivery is funded by the initiative
+- `coordinatedBy(ProductRoadmap → NorthStarRoadmap)` — how sub-domain roadmaps roll up
+- `composedOf(ValueStream → ValueStreamStage)` — stages within a value stream
+- `mapsTo(ValueStreamStage → BoundedContext)` — which domain context owns a stage
+- `realises(Service/OrchestrationFlow → ValueStreamStage)` — technical realisation of a stage
+- `justifies(ValueImpactMap → ProductRoadmap item)` — why a roadmap item exists
+- `identifies(StakeholderMap → Actor)` — actors relevant to a scope
+- `influences(StakeholderMap → ValueStream/StrategicInitiative)` — governance scope
+- `aligns(NorthStarRoadmap → StrategicInitiative)` — strategic traceability
+- `dependsOn(ProductRoadmap milestone → ProductRoadmap milestone)` — cross-subdomain sequencing
 
 ### Relationship Cardinality and Constraints
 
@@ -410,6 +501,24 @@ Nothing gets built without a failing test first. Applied at every level:
 
 ---
 
+### Phase 6: Strategic Alignment & Coordination (Weeks 23–26)
+
+**Goal**: Populate the strategic overlay — value streams, stakeholder maps, value impact maps, roadmaps — and enable cross-subdomain coordination views aligned to strategic initiatives.
+
+| Step | Deliverable | TDD approach |
+|---|---|---|
+| 6.1 | Strategic inventory schemas: `StrategicInitiative`, `ValueStream`, `ValueStreamStage`, `StakeholderMap`, `ValueImpactMap`, `ProductRoadmap`, `NorthStarRoadmap` | Test: schema validation passes for valid fixtures, rejects invalid |
+| 6.2 | Value stream mapping: ingestion of value stream definitions, stage decomposition, mapping stages to bounded contexts | Test: extraction produces correct stage→context mappings for golden inputs |
+| 6.3 | Stakeholder map extraction: identify actors, interest/influence levels from initiative and programme documentation | Test: actor extraction accuracy on labelled samples |
+| 6.4 | Value impact map construction: trace strategic goal → actor → impact → deliverable from programme documents | Test: impact map matches expected structure for known strategic documents |
+| 6.5 | Roadmap ingestion: product roadmaps linked to sub-domains, north star roadmap coordinating across sub-domains | Test: roadmap items link correctly to capabilities and initiatives; cross-domain dependencies identified |
+| 6.6 | Strategic views: value stream map, stakeholder map, north star roadmap, strategic initiative dashboard | Test: views render correctly for seeded strategic graph |
+| 6.7 | Cross-domain dependency detection: identify sequencing constraints and milestone dependencies across product roadmaps | Test: dependency agent correctly identifies known cross-domain blockers in test data |
+
+**Key Principle**: Strategic artifacts are first-class inventory entries with full provenance, versioning, and lifecycle — not freestanding documents. A roadmap item is linked to the capabilities it delivers, the initiative that funds it, and the value stream stage it improves. This enables impact assessment to flow from strategy changes downward through the entire graph.
+
+---
+
 ## Tech Stack Decision Strategy
 
 Rather than choosing everything upfront, we use a **Last Responsible Moment** approach:
@@ -442,6 +551,12 @@ The same inventory data supports multiple views, each serving specific user need
 | Dependency Graph | Service-to-service and system-to-system dependencies | L3 | "As a platform engineer, I want to see dependencies so that I can plan upgrades safely" |
 | Impact Assessment Report | Structured output of impact agent run | All layers | "As a change manager, I want to see what a regulation change affects so that I can plan the response" |
 | Gap Analysis | Domain concepts not yet functionally or technically realised | L1 vs L2/L3 | "As a portfolio manager, I want to see unimplemented capabilities so that I can prioritise investment" |
+| Value Stream Map | End-to-end value flow with stages, owning contexts, cycle times, bottlenecks | L0 + L1 + L3 | "As a business unit lead, I want to see how value flows across sub-domains so that I can identify optimisation opportunities" |
+| Stakeholder Map | Actors, their interest/influence, engagement model for a given scope | L0 | "As a programme manager, I want to see who is affected by and can influence an initiative so that I can plan engagement" |
+| Value Impact Map | Strategic goal → actor → impact → deliverable traceability | L0 + L1 | "As a product owner, I want to trace planned features back to strategic goals so that I can justify priorities" |
+| Product Roadmap View | Time-phased capability delivery plan for a sub-domain | L0 + L1 | "As a delivery lead, I want to see what my team is building and when so that I can manage dependencies" |
+| North Star Roadmap | Cross-subdomain coordination: milestones, dependencies, strategic alignment | L0 | "As a business unit CTO, I want to see how all sub-domain roadmaps align to our strategic initiatives so that I can ensure coordinated delivery" |
+| Strategic Initiative Dashboard | Initiative health: progress against value stream targets, roadmap status, stakeholder sentiment | L0 | "As a strategy lead, I want to see initiative progress against outcomes so that I can course-correct early" |
 
 ---
 
@@ -476,3 +591,5 @@ Decisions are the highest-value nodes in the graph. They are where regulation bi
 | Scope creep from multiple domain onboarding simultaneously | Medium | Medium | Single domain pilot (Payments) before expanding; domain packs isolated from core; clear phase gates |
 | Vendor lock-in on graph DB or LLM provider | Low | Medium | Port/adapter architecture; abstract interfaces; gateway pattern for LLM; proven by Phase 0 OCP test |
 | Team lacks DDD expertise | Medium | Medium | Domain architect role required; DDD training; ontology reviews; golden datasets encode correct classifications |
+| Strategic artifacts become disconnected from delivery reality | High | Medium | Bidirectional linking: roadmap items must reference capabilities; staleness detection applies to strategic entries; quarterly strategic alignment reviews |
+| North star roadmap coordination overhead across sub-domains | Medium | Medium | Start with single business unit pilot; lightweight coordination (milestone dependencies only); automate dependency detection from graph |

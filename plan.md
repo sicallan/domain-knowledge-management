@@ -411,7 +411,8 @@ Nothing gets built without a failing test first. Applied at every level:
 | 0b.1 | Relationship schema: typed edge definitions with cardinality constraints and direction | Test: relationship validator accepts/rejects correctly, cardinality enforced |
 | 0b.2 | Schema extension mechanism: prove OCP by adding a new inventory type without modifying existing code | Test: extension point loads new type; existing tests still pass |
 | 0b.3 | Graph persistence interface (port): define abstract interface for graph storage with event log | Test: port contract tests (against in-memory stub), mutation events recorded |
-| 0b.4 | Quality scoring framework: composite quality score computation for inventory entries | Test: score correctly computed for entries with known quality dimensions |
+| 0b.4 | Loader interface (port): define abstract loader interface that reads intermediate JSONL and writes to a target store; prove with graph loader stub | Test: loader contract tests pass; stub correctly maps JSONL entries to store operations |
+| 0b.5 | Quality scoring framework: composite quality score computation for inventory entries | Test: score correctly computed for entries with known quality dimensions |
 
 **Tech decisions deferred until proven needed** (kept open):
 - Graph DB choice (Neo4j vs Neptune vs in-memory for dev)
@@ -429,17 +430,17 @@ Nothing gets built without a failing test first. Applied at every level:
 
 ### Phase 1: First Vertical Slice (Weeks 4–7)
 
-**Goal**: One complete path from source document → inventory entries → graph → queryable view.
+**Goal**: One complete path from source document → intermediate JSONL → loader → graph → queryable view.
 
 | Step | Deliverable | TDD approach |
 |---|---|---|
 | 1.1 | Source connector: file/markdown ingestion adapter (plugin interface) | Test: adapter produces canonical output for fixture inputs |
-| 1.2 | Enrichment module: LLM-based extraction of domain concepts, decisions, rules from text | Test: extraction against golden dataset achieves target precision/recall |
-| 1.3 | Graph persistence adapter: implement port for chosen graph store (start with lightweight: e.g., in-memory or SQLite-backed for dev, Neo4j for integration) | Test: contract tests pass on real adapter |
+| 1.2 | Enrichment module: LLM-based extraction producing **intermediate JSONL output** conforming to the fixed-core schema (see *Intermediate JSONL Format & Multi-Store Loader Architecture*) | Test: extraction against golden dataset achieves target precision/recall; JSONL output validates against schema |
+| 1.3 | Graph loader: first loader implementation reading from intermediate JSONL and populating graph store (start with lightweight: e.g., in-memory or SQLite-backed for dev, Neo4j for integration) | Test: loader contract tests pass; JSONL→graph round-trip produces expected state |
 | 1.4 | Query interface: simple API to retrieve inventory items and traverse relationships | Test: query returns expected results for seeded graph |
 | 1.5 | First view: Domain Map view projection from graph | Test: view output matches expected structure for known graph state |
 
-**OCP validation**: add a second connector (e.g., JSON ingestion) — must work without modifying core pipeline code, only adding a new adapter.
+**OCP validation**: add a second connector (e.g., JSON ingestion) — must work without modifying core pipeline code, only adding a new adapter. Add a second loader (e.g., in-memory vector store) — must work without modifying extraction or the first loader.
 
 ---
 
@@ -527,6 +528,7 @@ Rather than choosing everything upfront, we use a **Last Responsible Moment** ap
 |---|---|---|
 | Graph DB | End of Phase 0 (once port interface is stable and load profile is understood) | Query patterns, scale needs, team familiarity |
 | Vector DB | Phase 1 (when retrieval is needed) | Embedding model choice, hybrid search needs |
+| Relational DB (PostgreSQL) | Phase 3 (when admin/reporting needs materialise) | Structured query needs, RBAC, audit requirements |
 | Workflow engine | Phase 2 (when orchestration pipelines are complex enough) | Durability needs, complexity of DAGs |
 | LLM provider/model | Phase 1 (but abstracted behind gateway) | Cost, accuracy, latency; gateway allows switching |
 | Deployment platform | Phase 1 (but containerised from start) | Team infra, cost, compliance constraints |
@@ -575,6 +577,83 @@ The same inventory data supports multiple views, each serving specific user need
 The system is not a document store. Every ingested artifact must ultimately contribute to populating, updating, or evidencing one or more typed inventory entries with explicit relationships. The document is the evidence; the inventory entry is the assertion. The graph connects assertions. The views interpret the graph. The agents reason over the graph.
 
 Decisions are the highest-value nodes in the graph. They are where regulation bites, where business logic concentrates, where errors are most costly, and where impact assessment yields the most signal. The platform exists primarily to make decisions visible, traceable, and assessable.
+
+---
+
+## Intermediate JSONL Format & Multi-Store Loader Architecture
+
+### Core Principle: Extract Once, Load Many
+
+All extraction and enrichment pipelines produce their output as an **intermediate JSONL file** — not directly into any final storage system. This intermediate format is the single canonical handoff point between extraction and storage. Loaders then consume this JSONL to populate whichever final storage system(s) are appropriate for the use case.
+
+```
+Source Documents → Extraction/Enrichment → Intermediate JSONL → Loaders → Final Storage(s)
+                                                                   ├─→ PostgreSQL (structured inventory, queries, audit)
+                                                                   ├─→ Vector/RAG store (semantic search, embeddings)
+                                                                   ├─→ Neo4j / Graph DB (relationships, traversals)
+                                                                   └─→ Future stores (as use cases demand)
+```
+
+### Intermediate JSONL Schema
+
+Each line in the JSONL file is a self-contained JSON object representing one extracted knowledge entry. The schema has a **fixed core** (required fields that every entry must have) and is **open to extension** (additional fields may be added per inventory type without breaking existing consumers).
+
+**Fixed core fields** (required on every entry):
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string (UUID) | Unique identifier for this extraction |
+| `type` | string | Inventory type (e.g., `DomainConcept`, `Decision`, `Rule`, `Relationship`) |
+| `version` | string | Schema version of this entry (semver) |
+| `source` | object | Provenance: `{ file, location, fetchedAt, sourceAuthority }` |
+| `confidence` | number (0.0–1.0) | Extraction confidence score |
+| `extractedAt` | ISO 8601 timestamp | When this extraction was produced |
+| `data` | object | The typed payload (schema varies by `type`) |
+
+**Extension mechanism**:
+- The `data` object is typed per `type` field and conforms to the inventory type schema defined in Phase 0a
+- Additional top-level fields beyond the fixed core are permitted (open schema) — loaders ignore fields they don't recognise
+- A `metadata` field (object, optional) is reserved for pipeline-specific annotations (e.g., extraction model version, run ID, batch ID)
+- New fields are additive only — existing fields are never removed or renamed (follows OCP)
+
+**Example JSONL entry**:
+```json
+{"id":"a1b2c3d4-...","type":"Decision","version":"1.0.0","source":{"file":"decision-log.csv","location":"row:1","fetchedAt":"2024-06-01T10:00:00Z","sourceAuthority":"project"},"confidence":0.92,"extractedAt":"2024-06-01T12:30:00Z","data":{"name":"CSM Selection","status":"ACCEPTED","context":"Need to connect to SEPA Instant clearing","outcomes":["Selected TIPS as primary CSM"],"owner":"Architecture Board"},"metadata":{"runId":"run-0042","model":"gpt-4o","batchId":"batch-007"}}
+```
+
+### Loader Architecture
+
+Loaders are independent, pluggable components that read from the intermediate JSONL and write to a specific storage backend. Each loader:
+
+1. **Reads the same JSONL format** — no loader requires a different extraction output
+2. **Is responsible for its own transformation** — maps the canonical JSONL structure to its target store's native format (e.g., SQL rows, graph nodes/edges, vector embeddings)
+3. **Is independently deployable and testable** — a loader can be added, removed, or updated without affecting extraction or other loaders
+4. **Implements a common loader interface** (port) — enabling consistent orchestration, error handling, and monitoring
+
+**Planned storage targets** (best fit per use case):
+
+| Store | Use Case | Why |
+|---|---|---|
+| **PostgreSQL** | Structured inventory queries, audit trail, RBAC, reporting, administrative data | Relational strength: joins, transactions, mature tooling |
+| **Vector/RAG store** | Semantic search, NL question answering, similarity-based retrieval | Embedding-native: fast ANN search, hybrid retrieval |
+| **Neo4j / Graph DB** | Relationship traversal, impact analysis, dependency graphs, cross-layer linking | Graph-native: multi-hop queries, pattern matching, path analysis |
+
+Additional storage targets may be introduced as use cases emerge — the architecture explicitly supports this via the loader plugin interface.
+
+### Design Constraints
+
+- **JSONL is the contract**: Extraction pipelines MUST NOT write directly to final storage. The intermediate JSONL is the single integration boundary.
+- **Loaders are idempotent**: Re-running a loader against the same JSONL produces the same end state (supports replay and recovery).
+- **Loaders declare their required fields**: Each loader specifies which JSONL fields it consumes, enabling validation that the extraction pipeline produces what loaders need.
+- **JSONL files are immutable once written**: A completed extraction run produces a JSONL file that is never modified. Re-extraction produces a new file.
+- **Ordering**: JSONL entries within a file are ordered by extraction sequence. Loaders may process in any order unless they declare ordering dependencies.
+
+### Relationship to Phases
+
+- **Phase 0b**: Loader interface (port) defined alongside graph persistence port
+- **Phase 1**: First extraction pipeline outputs JSONL; first loader populates graph store from JSONL
+- **Phase 3+**: Additional loaders introduced as storage targets are selected (vector DB for search, PostgreSQL for admin/reporting)
+- **Phase 5**: Loader orchestration refined for incremental updates and replay
 
 ---
 

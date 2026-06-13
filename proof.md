@@ -82,7 +82,7 @@ This document defines:
       run-001-relationships.jsonl  # All extracted relationships from a pipeline run
 ```
 
-> **Note**: The `/intermediate-output` directory contains the intermediate JSONL files produced by extraction/enrichment pipelines. Each file conforms to the fixed-core JSONL schema defined in the main plan. Loaders read from this directory to populate their respective storage backends (graph DB, vector store, PostgreSQL, etc.). These files are immutable once written — re-extraction produces new files.
+> **Note**: The `/intermediate-output` directory contains the intermediate JSONL files produced by extraction/enrichment pipelines. Each file conforms to the fixed-core JSONL schema defined in the [main plan](plan.md#intermediate-jsonl-format--multi-store-loader-architecture). Loaders read from this directory to populate their respective storage backends (graph DB, vector store, PostgreSQL, etc.). These files are immutable once written — re-extraction produces new files.
 
 ---
 
@@ -764,7 +764,7 @@ date,total_transactions,within_sla,breached_sla,sla_compliance_pct,avg_duration_
 
 The test suite validates the knowledge management pipeline's ability to correctly extract, classify, relate, and surface information from the raw inputs above.
 
-> **Intermediate JSONL as test boundary**: All extraction tests (T1, T2, T3, T5, T7, T13) validate that the pipeline produces correct **intermediate JSONL output** conforming to the fixed-core schema defined in the main plan (see *Intermediate JSONL Format & Multi-Store Loader Architecture*). The JSONL file is the contract — loaders then consume it to populate final storage. Tests at the loader level (graph population, vector indexing, relational storage) are separate integration tests that validate JSONL→store correctness.
+> **Intermediate JSONL as test boundary**: All extraction tests (T1, T2, T3, T5, T7, T13) validate that the pipeline produces correct **intermediate JSONL output** conforming to the fixed-core schema defined in the main plan (see [plan.md: *Intermediate JSONL Format & Multi-Store Loader Architecture*](plan.md#intermediate-jsonl-format--multi-store-loader-architecture)). The JSONL file is the contract — loaders then consume it to populate final storage. Tests at the loader level (graph population, vector indexing, relational storage) are separate integration tests that validate JSONL→store correctness.
 
 ### Test Categories
 

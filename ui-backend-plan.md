@@ -47,7 +47,7 @@ This document **does** define:
 2. **GraphQL primary, REST secondary**: GraphQL for the rich, relationship-heavy domain; REST endpoints for simple operations (health, auth, webhooks, file upload).
 3. **Query delegation**: The API translates UI requests into the query patterns defined in the main plan's *Search and Retrieval Strategy*. It does not re-implement search — it calls the retrieval layer. Different queries may route to different storage backends (graph DB for traversals, vector store for semantic search, PostgreSQL for structured queries).
 4. **Event-driven updates**: The backend subscribes to the knowledge graph event log (defined in main plan: *Knowledge Graph Event Log*) to push real-time updates to connected UI clients via WebSockets.
-5. **Storage-agnostic**: The backend API abstracts over multiple storage backends (PostgreSQL, Neo4j/graph DB, vector/RAG store). The API consumer never needs to know which backend serves a given query — the backend routes to the best-fit store based on query type. All stores are populated by loaders reading from the same intermediate JSONL (see main plan: *Intermediate JSONL Format & Multi-Store Loader Architecture*).
+5. **Storage-agnostic**: The backend API abstracts over multiple storage backends (PostgreSQL, Neo4j/graph DB, vector/RAG store). The API consumer never needs to know which backend serves a given query — the backend routes to the best-fit store based on query type. All stores are populated by loaders reading from the same intermediate JSONL (see [plan.md: *Intermediate JSONL Format & Multi-Store Loader Architecture*](plan.md#intermediate-jsonl-format--multi-store-loader-architecture)).
 
 ### API Domains
 

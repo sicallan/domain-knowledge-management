@@ -368,6 +368,8 @@ Nothing gets built without a failing test first. Applied at every level:
 
 ### Phase 3: Layer 2 + Vendor/Project Mapping (Weeks 12–14)
 
+> **Note**: Phase 3 also marks the start of the **UI & Backend Application** workstream. The application shell, GraphQL API, authentication, and Knowledge Explorer are delivered in parallel with the steps below. See **[UI & Backend Application Plan](ui-backend-plan.md)** for detailed steps (UI-3.1 through UI-3.6), architecture, and non-functional requirements. That plan continues through Phases 4 and 5.
+
 **Goal**: Functional realisation layer populated; coverage and gap views enabled.
 
 | Step | Deliverable | TDD approach |
@@ -426,7 +428,7 @@ Each decision is captured as an ADR (Architecture Decision Record) in `/docs/adr
 
 ## Views and Perspectives
 
-The same inventory data supports multiple views, each serving specific user needs:
+The same inventory data supports multiple views, each serving specific user needs. For details on how these views are rendered in the UI application (interaction patterns, screen layouts, navigation), see **[UI & Backend Application Plan](ui-backend-plan.md)**.
 
 | View | Purpose | Layers | User Story |
 |---|---|---|---|

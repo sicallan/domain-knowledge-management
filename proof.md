@@ -15,6 +15,7 @@ This document defines:
 /raw-inputs
   /scheme-documentation          # Regulatory/scheme rulebooks and specs
     /sepa-instant
+      rulebook-sct-inst-v1.1.md
       rulebook-sct-inst-v1.2.md
       scheme-participant-guide.pdf
       message-specifications-pain001.xml
@@ -29,6 +30,7 @@ This document defines:
       gpp-message-mapping-pain001.json
       gpp-api-reference-payment-initiation.json
       gpp-data-model-payment-entity.xml
+      gpp-release-notes-v2023.2.md
       gpp-release-notes-v2024.1.md
 
   /project-documentation          # Bank's internal project artifacts
@@ -69,6 +71,10 @@ This document defines:
     currency-codes.json
     country-iban-formats.json
     scheme-participation-status.csv
+
+  /metadata                       # Source metadata for lineage
+    source-manifest.json          # File list with fetch dates, versions, authors
+    ingestion-log.jsonl           # Record of when each source was processed
 ```
 
 ---
@@ -76,6 +82,27 @@ This document defines:
 ## Sample Document Specifications
 
 ### 1. Scheme Documentation
+
+#### `rulebook-sct-inst-v1.1.md` (previous version)
+**Format**: Markdown
+**Content**: Previous version of EPC SCT Inst rulebook covering:
+- Same structure as v1.2 but with:
+  - Amount limit of €15,000 (changed to €100,000 in v1.2)
+  - No recall support (added in v1.2)
+  - Maximum execution time of 20 seconds (tightened to 10s in v1.2)
+
+**Expected extractions**:
+- Same domain concepts as v1.2 (minus `Recall`)
+- Business invariants with different values (€15k limit, 20s timing)
+- Used for version-change detection testing
+
+**Version change test expectations**:
+- System detects amount limit change: €15,000 → €100,000
+- System detects timing change: 20s → 10s
+- System detects new concept: `Recall` added in v1.2
+- Previous version entries marked with `validTo` date
+
+---
 
 #### `rulebook-sct-inst-v1.2.md`
 **Format**: Markdown
@@ -877,6 +904,69 @@ Validate that every extraction has proper evidence and confidence scoring.
 
 ---
 
+### T10: Robustness and Negative Tests
+
+Validate that the pipeline handles ambiguous, contradictory, or malformed input gracefully.
+
+| Test ID | Source/Scenario | Expected Behaviour | Assertion |
+|---|---|---|---|
+| T10.01 | Malformed CSV with missing columns | Graceful degradation | Partial extraction with reduced confidence; error logged, not crashed |
+| T10.02 | Contradictory amount limits: scheme says €100k, project DEC-004 says €15k standard | Contradiction flagged | Both facts stored; contradiction relationship created with both sources cited |
+| T10.03 | Duplicate documents (same content, different filenames) | Deduplication or merge | Single inventory entry created; both sources linked as evidence |
+| T10.04 | Document with mixed languages (English headings, German content) | Language-aware extraction | Language detected per section; extraction quality maintained |
+| T10.05 | Incomplete/truncated document (PDF cut off mid-sentence) | Partial extraction with penalty | Extracted facts have lower confidence; incompleteness noted in metadata |
+| T10.06 | Outdated document superseded by newer version | Temporal resolution | New version facts take precedence; old version marked with `validTo` date |
+| T10.07 | Source with ambiguous entity reference ("the system") | Conservative resolution | Not merged with incorrect entity; flagged for human review |
+| T10.08 | Empty or zero-content source file | No-op with warning | No inventory entries created; warning logged |
+
+---
+
+### T11: Performance and Scale Tests
+
+Validate extraction performance and query latency at target scale.
+
+| Test ID | Scenario | Target | Assertion |
+|---|---|---|---|
+| T11.01 | Single markdown document extraction | < 30 seconds | Extraction completes within time budget |
+| T11.02 | Single JSON/XML structured extraction | < 10 seconds | Structured extraction faster than unstructured |
+| T11.03 | Batch ingestion of all ~30 PoC documents | < 10 minutes | Full corpus processable in reasonable time |
+| T11.04 | Graph query: single-hop relationship | < 200ms | Interactive query latency |
+| T11.05 | Graph query: multi-hop traversal (L1→L2→L3) | < 1 second | Cross-layer trace remains fast |
+| T11.06 | Impact assessment agent run | < 60 seconds | Impact analysis for single change scenario |
+| T11.07 | Concurrent extraction (5 documents simultaneously) | No data races | All extractions correct; no duplicate/corrupted entries |
+
+---
+
+### T12: Incremental Update Tests
+
+Validate that the pipeline correctly handles updates to previously ingested sources.
+
+| Test ID | Scenario | Expected Behaviour | Assertion |
+|---|---|---|---|
+| T12.01 | Modified source document (new section added) | Existing entries preserved; new entries added | No duplication; previous entries retain their IDs |
+| T12.02 | Deleted section in source document | Affected entries flagged as potentially stale | Staleness marker applied; entries not auto-deleted |
+| T12.03 | New source contradicts existing entry | Conflict surfaced | Both versions visible; contradiction relationship created |
+| T12.04 | Re-ingestion of unchanged source | Idempotent (no-op) | No new versions created; timestamps unchanged |
+| T12.05 | Updated relationship evidence | Relationship confidence updated | Existing relationship strengthened; evidence list extended |
+| T12.06 | Source version upgrade (v1.1 → v1.2) | Version history maintained | Both versions in history; current marked as latest |
+
+---
+
+### T13: Entity Resolution Tests
+
+Validate that the same real-world entity is correctly unified across different sources and naming conventions.
+
+| Test ID | Source References | Expected Resolution | Assertion |
+|---|---|---|---|
+| T13.01 | "payment-engine" (logs) + "GPP Payment Engine" (vendor docs) + "Payment Processing Service" (project docs) | Single unified entity | All three names resolve to one service entry with aliases |
+| T13.02 | "TIPS" in scheme docs + "TIPS" in project docs + "TIPS" in operational logs | Single system entity | Correctly unified across all sources |
+| T13.03 | "Validator" (GPP docs) + "payment-validator" (logs) | Correctly linked | Vendor module linked to runtime service instance |
+| T13.04 | "the system" (ambiguous reference in BRD) | Not incorrectly merged | Ambiguous reference flagged; not merged with wrong entity |
+| T13.05 | "SCT Inst" + "SEPA Instant Credit Transfer" + "Instant Payment" | Single domain concept | All names treated as synonyms for one concept |
+| T13.06 | "Deutsche Bank" (reach directory) + "DEUTDEFFXXX" (BIC) | Correctly linked | BIC-to-institution mapping established |
+
+---
+
 ## Test Execution Strategy
 
 ### Levels
@@ -887,6 +977,34 @@ Validate that every extraction has proper evidence and confidence scoring.
 4. **Agent tests**: impact assessment against seeded scenarios (T6)
 5. **Coverage tests**: completeness assertions over full corpus (T8)
 6. **Quality tests**: confidence and provenance validation (T9)
+7. **Robustness tests**: negative cases and error handling (T10)
+8. **Performance tests**: latency and throughput validation (T11)
+9. **Incremental tests**: update and idempotency validation (T12)
+10. **Entity resolution tests**: cross-source unification (T13)
+
+### Target Metrics by Category
+
+| Category | Precision Target | Recall Target | Notes |
+|---|---|---|---|
+| T1 (Schema Extraction) | ≥ 0.90 | ≥ 0.85 | Core extraction accuracy |
+| T2 (Relationships) | ≥ 0.85 | ≥ 0.80 | Cross-source linking is harder |
+| T3 (Decisions) | ≥ 0.90 | ≥ 0.90 | High bar — decisions are critical |
+| T4 (Cross-Layer) | — | ≥ 0.80 | Completeness of L1→L3 traces |
+| T5 (Behaviour) | ≥ 0.90 | ≥ 0.85 | Sequence accuracy matters |
+| T9 (Confidence) | — | — | Calibration error < 0.10 |
+| T13 (Entity Resolution) | ≥ 0.95 | ≥ 0.85 | False merges are high-impact |
+
+### Source Authority Hierarchy
+
+When multiple sources assert conflicting facts, resolution follows this authority order:
+
+1. **Regulatory** (PSD2, central bank) — highest authority
+2. **Scheme** (EPC rulebooks, operational rules)
+3. **Vendor** (GPP documentation, release notes)
+4. **Project** (BRD, functional spec, design docs)
+5. **Operational** (logs, events, metrics) — lowest authority, but most current
+
+When authority is equal, more recent sources take precedence. When both authority and recency are equal, the conflict is surfaced for human resolution.
 
 ### Golden Dataset
 
@@ -894,6 +1012,8 @@ The sample documents above, combined with the expected extractions defined in th
 - Known input (the source document)
 - Expected output (the inventory entries and relationships)
 - Clear pass/fail criteria
+
+**Golden dataset versioning**: As extraction models improve, expected outputs are updated. Previous baselines are retained for regression comparison. The rule is: "extraction must be at least as good as the previous baseline."
 
 ### Automation
 
@@ -905,10 +1025,20 @@ npm test -- --suite=proof-of-concept
 # Run by category
 npm test -- --suite=proof-of-concept --category=T1  # Schema extraction
 npm test -- --suite=proof-of-concept --category=T6  # Impact assessment
+npm test -- --suite=proof-of-concept --category=T10 # Robustness
+npm test -- --suite=proof-of-concept --category=T13 # Entity resolution
 
 # Run single test
 npm test -- --suite=proof-of-concept --test=T3.04
 ```
+
+### Handling Non-Deterministic Extraction
+
+LLM-based extraction is inherently non-deterministic. The test framework addresses this via:
+- **Deterministic mode**: temperature=0, fixed seed for reproducibility during CI
+- **Fuzzy matching**: assertions use semantic similarity thresholds, not exact string matching
+- **Statistical assertions**: for precision/recall targets, run extraction N times and assert average meets threshold
+- **Regression baseline**: current results compared against stored baseline; significant regressions block merge
 
 ### Metrics
 
@@ -918,6 +1048,8 @@ npm test -- --suite=proof-of-concept --test=T3.04
 - **Cross-layer completeness**: % of L1 concepts with L2 and L3 traceability
 - **Decision completeness**: % of decisions with full structure (inputs, rules, outcomes)
 - **Confidence calibration**: correlation between confidence scores and actual correctness
+- **Entity resolution precision**: % of merges that are correct (false merge rate)
+- **Incremental correctness**: % of updates that correctly modify existing entries without duplication
 
 ---
 
@@ -927,10 +1059,16 @@ This proof-of-concept corpus covers:
 - **6 source categories** (scheme, vendor, project, operational, regulatory, reference data)
 - **7 file formats** (MD, PDF, JSON, JSONL, XML, CSV, OpenAPI)
 - **~30 source files** representing realistic enterprise documentation
-- **9 test categories** with **60+ individual test cases**
+- **13 test categories** with **90+ individual test cases**
 - **All 3 model layers** exercised (pure domain, functional, technical)
 - **Decision as first-class concept** validated through multiple sources
 - **Impact assessment** validated through scenario-based tests
 - **Full traceability** from source evidence to inventory to relationships to views
+- **Robustness** validated through negative/edge case tests
+- **Entity resolution** validated across naming conventions and sources
+- **Incremental updates** validated for idempotency and correctness
+- **Performance** validated against explicit latency targets
+- **Quantitative targets** defined per test category (precision/recall thresholds)
+- **Source authority hierarchy** established for conflict resolution
 
 When the pipeline passes this test suite with target precision and recall, we have confidence that the system can ingest real enterprise documentation and produce a useful, queryable, trustworthy knowledge graph.

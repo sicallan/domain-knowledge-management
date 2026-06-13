@@ -16,7 +16,13 @@
 | invariants | Business invariants that constrain outcomes |
 | outcomes | Possible decision outcomes and their downstream effects |
 | owner | Bounded context / service responsible |
+| frequency | How often the decision is invoked (transactions/sec, daily, on-demand) |
+| latencyBudget | Maximum acceptable decision time for automated decisions |
 | evidencedBy | Source evidence |
+| lifecycle_status | `draft` / `active` / `deprecated` / `retired` |
+| version | Current version of the decision definition |
+| validFrom | Date from which this decision definition is effective |
+| validTo | Date until which this decision definition is effective (null = current) |
 
 ### New relationships
 
@@ -61,12 +67,12 @@ Each inventory is a named, versioned, typed catalogue of entities with defined s
 
 | Inventory | Layer | Key attributes |
 |---|---|---|
-| `DomainConcept` | L1 | name, type (aggregate/entity/event/policy/invariant/command), subdomain, context |
-| `BusinessCapability` | L1 | name, level, parent capability |
-| `BusinessInvariant` | L1 | statement, governing context, severity |
-| `Rule` | L1/L2 | expression, type (validation/decision/constraint), source |
-| `Decision` | L1/L2 | name, type, inputs, rules, outcomes, owner |
-| `ReferenceData` | L1/L2 | name, owner, update frequency, consuming concepts |
+| `DomainConcept` | L1 | name, type (aggregate/entity/event/policy/invariant/command), subdomain, context, lifecycle_status, version |
+| `BusinessCapability` | L1 | name, level, parent capability, lifecycle_status |
+| `BusinessInvariant` | L1 | statement, governing context, severity, scope (global/context-specific), enforcementMechanism, lifecycle_status |
+| `Rule` | L1/L2 | expression, type (validation/decision/constraint), source, effectiveDate, expiryDate, version, lifecycle_status |
+| `Decision` | L1/L2 | name, type, inputs, rules, outcomes, owner, frequency, latencyBudget, lifecycle_status, version |
+| `ReferenceData` | L1/L2 | name, owner, update frequency, consuming concepts, sourceOfTruth, refreshMechanism, stalenessPolicy, lifecycle_status |
 | `VendorProduct` | L2 | name, vendor, version, capability claims |
 | `VendorCapabilityMapping` | L2 | vendor capability → domain concept, coverage, gaps |
 | `ProjectSpec` | L2 | name, type (requirement/design/ADR), status, domain concepts addressed |
@@ -120,6 +126,147 @@ Each inventory is a named, versioned, typed catalogue of entities with defined s
 - `satisfiedBy(RegulatoryRequirement → ProjectSpec/Rule/PolicyStatement/Decision)`
 - `exposes(Service → RegulatoryRequirement)` (surface area)
 
+### Relationship Cardinality and Constraints
+
+| Relationship | Cardinality | Required | Constraint |
+|---|---|---|---|
+| `evaluates(Decision → Rule)` | 1:N | At least one Rule OR BusinessInvariant | A Decision must reference at least one evaluable element |
+| `consumes(Decision → ReferenceData)` | 0:N | Optional | — |
+| `constrainedBy(Decision → BusinessInvariant)` | 0:N | Optional | — |
+| `triggeredBy(Event/Step → Decision)` | 1:N → 1 | Required for automated decisions | Every automated decision must have a trigger |
+| `produces(Decision → Event/Command/StateTransition)` | 1:N | Required | Every decision must have at least one outcome |
+| `realizedBy(Decision → Service/Component)` | 0:N | Required for L3-mapped decisions | Technical realisation must be identified |
+| `implements(Service → DomainConcept)` | M:N | At least one per service | No orphan services |
+| `belongsTo(Service → BoundedContext)` | N:1 | Required | A service belongs to exactly one context |
+| `emits(Service → Event)` | 1:N | Optional | — |
+| `evidencedBy(Any → Source)` | 1:N | Required | Every inventory entry must have provenance |
+
+All relationships are navigable in both directions for graph traversal.
+
+---
+
+## Governance and Ownership Model
+
+### Inventory Ownership
+
+| Inventory | Owner Role | Approval Authority |
+|---|---|---|
+| L1 (Domain) inventories | Domain Architect | Architecture Board |
+| L2 (Functional) inventories | Product Owner / Solution Architect | Project Lead + Architecture Board |
+| L3 (Technical) inventories | Engineering Lead | Engineering Lead + peer review |
+| Cross-layer relationships | Domain Architect | Architecture Board |
+| Reference Data | Data Steward | Data Governance Board |
+
+### Schema Change Process
+
+1. Schema changes proposed via ADR (Architecture Decision Record)
+2. Additive changes (new optional fields, new types): PR-based review by inventory owner
+3. Breaking changes (field removal, type change): Architecture Board approval required
+4. All changes must pass existing schema validation tests before merge
+
+### Conflict Resolution
+
+When multiple sources assert contradictory facts:
+1. **Source authority hierarchy**: Regulatory > Scheme > Vendor > Project > Operational
+2. **Temporal resolution**: More recent source wins when authority is equal
+3. **Confidence-based**: Higher-confidence extraction wins when authority and time are equal
+4. **Human escalation**: Conflicts that cannot be auto-resolved are queued for manual review with full context (both sources, confidence scores, impact assessment)
+
+### Data Stewardship
+
+- Every inventory type has a designated steward responsible for quality
+- Stewards review low-confidence extractions weekly
+- Stewards approve schema evolution proposals for their domain
+- Stewards maintain golden datasets for their inventory types
+
+---
+
+## Versioning Strategy
+
+### Schema Versioning
+- Schemas follow semantic versioning (`major.minor.patch`)
+- Additive-only evolution for minor versions
+- Breaking changes require major version bump with migration path
+
+### Entry-Level Versioning
+- Every inventory entry maintains a version history
+- Each version records: `versionNumber`, `validFrom`, `validTo`, `changedBy`, `changeReason`, `evidenceRef`
+- **Bi-temporal modelling**: tracks both when the fact was true in the world (valid time) AND when the system learned it (transaction time)
+- Superseded entries are not deleted but marked with `validTo` timestamp
+- All versions remain queryable for time-travel analysis
+
+### Knowledge Graph Event Log
+- Every graph mutation (add/update/remove node or edge) is recorded as an immutable event
+- Events capture: `timestamp`, `mutationType`, `affectedEntity`, `previousState`, `newState`, `trigger` (agent/user/pipeline), `confidence`
+- Enables time-travel queries: "What did the graph look like on date X?"
+- Supports undo/rollback of agent-proposed changes
+- Provides audit trail for regulatory compliance
+
+---
+
+## Data Quality Dimensions
+
+Every fact in the knowledge graph is measured against six quality dimensions:
+
+| Dimension | Definition | Measurement |
+|---|---|---|
+| **Accuracy** | Is the extracted fact correct? | Precision against golden dataset |
+| **Completeness** | Are all expected facts present? | Recall against golden dataset |
+| **Consistency** | Do facts from different sources agree? | Contradiction detection rate |
+| **Timeliness** | Is the fact current? | Staleness score (time since last evidence) |
+| **Provenance** | Can the fact be traced to evidence? | Evidence link coverage (target: 100%) |
+| **Confidence** | How certain is the extraction? | Calibration error (predicted vs actual correctness) |
+
+### Quality Scoring
+- Each inventory entry receives a composite quality score (0.0–1.0)
+- Score = weighted combination of all applicable dimensions
+- Entries below threshold (configurable, default 0.6) are flagged for review
+- Quality trends tracked over time per inventory type
+
+---
+
+## Search and Retrieval Strategy
+
+### Query Patterns
+
+| Pattern | Example | Mechanism |
+|---|---|---|
+| Semantic search | "How does timeout handling work?" | Vector similarity over embedded entries |
+| Entity lookup | "Show me Decision DEC-004" | Direct graph node retrieval |
+| Relationship traversal | "What rules does the amount limit decision evaluate?" | Graph path query |
+| Impact query | "What is affected if we change the amount limit?" | Multi-hop graph traversal + scoring |
+| Faceted browse | "All L3 services in Payment bounded context" | Filtered graph query with facets |
+| Natural language | "Which regulations affect the sanctions screening?" | NL → structured query translation |
+| Temporal query | "What changed in the payment flow since last month?" | Event log replay + diff |
+
+### Retrieval Architecture
+- **Hybrid search**: combines vector similarity, keyword/BM25, and graph traversal
+- **Query planner**: decomposes complex queries into sub-queries across indices
+- **Faceted navigation**: filter by layer, type, owner, status, confidence, date range
+- **Result ranking**: combines relevance, recency, confidence, and authority
+
+---
+
+## Enterprise Integration Strategy
+
+### Integration Points
+
+| External System | Direction | Purpose |
+|---|---|---|
+| CMDB (ServiceNow, etc.) | Bidirectional | System/service inventory sync |
+| Wiki/Confluence | Import | Existing documentation ingestion |
+| Jira/ADO | Import + link | Project specs, decisions, requirements |
+| Enterprise Architecture tool (Sparx, LeanIX) | Export | Publish domain model and views |
+| Git repositories | Import | Code-level evidence, ADRs, READMEs |
+| CI/CD pipelines | Import | Deployment evidence, service metadata |
+| APM/Observability (Datadog, Dynatrace) | Import | Runtime behaviour evidence |
+
+### Integration Principles
+- All integrations use adapter pattern (OCP-compliant)
+- Each adapter implements the source connector port interface
+- Bidirectional sync uses event-driven updates (not polling)
+- Conflict resolution applies when external system contradicts internal state
+
 ---
 
 ## Guiding Engineering Principles
@@ -152,17 +299,28 @@ Nothing gets built without a failing test first. Applied at every level:
 
 ## Implementation Phases
 
-### Phase 0: Foundation (Weeks 1–3)
+### Phase 0a: Scaffold and Core Schemas (Weeks 1–2)
 
-**Goal**: Establish the schema-first, test-first engineering scaffold.
+**Goal**: Establish the engineering scaffold and prove the schema-first pattern with L1 types.
 
 | Step | Deliverable | TDD approach |
 |---|---|---|
-| 0.1 | Monorepo scaffold: package structure, tooling config (TS + Python), CI pipeline | Test: CI runs green on empty modules |
-| 0.2 | Schema module: JSON Schema definitions for all Layer 1 inventory types (`DomainConcept`, `BusinessCapability`, `BusinessInvariant`, `Rule`, `ReferenceData`, `Decision`) | Test: schema validation passes for valid fixtures, rejects invalid |
-| 0.3 | Relationship schema: typed edge definitions with cardinality constraints | Test: relationship validator accepts/rejects correctly |
-| 0.4 | Schema extension mechanism: prove OCP by adding a new inventory type without modifying existing code | Test: extension point loads new type; existing tests still pass |
-| 0.5 | Graph persistence interface (port): define abstract interface for graph storage | Test: port contract tests (against in-memory stub) |
+| 0a.1 | Monorepo scaffold: package structure, tooling config (TS + Python), CI pipeline | Test: CI runs green on empty modules |
+| 0a.2 | Schema module: JSON Schema definitions for all Layer 1 inventory types (`DomainConcept`, `BusinessCapability`, `BusinessInvariant`, `Rule`, `ReferenceData`, `Decision`) | Test: schema validation passes for valid fixtures, rejects invalid |
+| 0a.3 | Lifecycle and versioning: `lifecycle_status` and `version` fields on all types, bi-temporal validity support | Test: version transitions validated, temporal queries work on fixtures |
+
+---
+
+### Phase 0b: Relationships and Extension (Weeks 3–4)
+
+**Goal**: Prove the relationship model, extension mechanism, and graph port interface.
+
+| Step | Deliverable | TDD approach |
+|---|---|---|
+| 0b.1 | Relationship schema: typed edge definitions with cardinality constraints and direction | Test: relationship validator accepts/rejects correctly, cardinality enforced |
+| 0b.2 | Schema extension mechanism: prove OCP by adding a new inventory type without modifying existing code | Test: extension point loads new type; existing tests still pass |
+| 0b.3 | Graph persistence interface (port): define abstract interface for graph storage with event log | Test: port contract tests (against in-memory stub), mutation events recorded |
+| 0b.4 | Quality scoring framework: composite quality score computation for inventory entries | Test: score correctly computed for entries with known quality dimensions |
 
 **Tech decisions deferred until proven needed** (kept open):
 - Graph DB choice (Neo4j vs Neptune vs in-memory for dev)
@@ -241,10 +399,12 @@ Nothing gets built without a failing test first. Applied at every level:
 
 | Step | Deliverable | TDD approach |
 |---|---|---|
-| 5.1 | Contradiction agent | Test: detects known contradictions in test graph |
-| 5.2 | Correction agent with confidence scoring | Test: proposes correct fixes for known issues |
-| 5.3 | Auto-merge policy engine | Test: merges above threshold, queues below |
-| 5.4 | Continuous eval harness | Test: metrics track over time |
+| 5.1 | Contradiction agent: detects conflicting facts across sources using semantic similarity and logical rule evaluation | Test: detects known contradictions in test graph (conflicting invariants, overlapping rules, stale facts) |
+| 5.2 | Correction agent with confidence scoring: proposes fixes with provenance, ranks by confidence and impact | Test: proposes correct fixes for known issues; confidence scores correlate with actual correctness |
+| 5.3 | Auto-merge policy engine: configurable thresholds by inventory type, impact level, and source authority | Test: merges above threshold, queues below; respects authority hierarchy |
+| 5.4 | Continuous eval harness: periodic re-evaluation against golden datasets, drift detection, regression alerts | Test: metrics track over time; regressions trigger alerts |
+| 5.5 | Staleness detection: identifies entries whose evidence sources have been updated or superseded | Test: correctly flags entries with outdated provenance |
+| 5.6 | Graph health dashboard: quality scores by inventory type, contradiction counts, coverage metrics, trend lines | Test: dashboard renders correctly for known graph states |
 
 ---
 
@@ -266,20 +426,20 @@ Each decision is captured as an ADR (Architecture Decision Record) in `/docs/adr
 
 ## Views and Perspectives
 
-The same inventory data supports multiple views:
+The same inventory data supports multiple views, each serving specific user needs:
 
-| View | Purpose | Layers used |
-|---|---|---|
-| Domain Map | Subdomains, bounded contexts, context relationships | L1 |
-| Capability Inventory | Business capabilities and ownership | L1 |
-| Decision Inventory | All decisions, their rules, inputs, outcomes | L1 + L2 |
-| Vendor Coverage Map | Which vendor products cover which capabilities; gaps | L1 + L2 |
-| Compliance Matrix | Obligations vs. domain concept coverage and realisations | L1 + L2 + L3 |
-| System Landscape | All systems, their owners, capabilities supported | L3 |
-| Behaviour Flow View | Orchestration flows, events, decisions, state machines | L3 |
-| Dependency Graph | Service-to-service and system-to-system dependencies | L3 |
-| Impact Assessment Report | Structured output of impact agent run | All layers |
-| Gap Analysis | Domain concepts not yet functionally or technically realised | L1 vs L2/L3 |
+| View | Purpose | Layers | User Story |
+|---|---|---|---|
+| Domain Map | Subdomains, bounded contexts, context relationships | L1 | "As a domain architect, I want to see how bounded contexts relate so that I can identify integration boundaries" |
+| Capability Inventory | Business capabilities and ownership | L1 | "As a business analyst, I want to see all capabilities so that I can identify gaps and overlaps" |
+| Decision Inventory | All decisions, their rules, inputs, outcomes | L1 + L2 | "As a compliance officer, I want to see all automated decisions so that I can verify regulatory alignment" |
+| Vendor Coverage Map | Which vendor products cover which capabilities; gaps | L1 + L2 | "As a solution architect, I want to see vendor coverage so that I can identify build-vs-buy opportunities" |
+| Compliance Matrix | Obligations vs. domain concept coverage and realisations | L1 + L2 + L3 | "As a regulatory lead, I want to trace obligations to implementations so that I can prove compliance" |
+| System Landscape | All systems, their owners, capabilities supported | L3 | "As an operations engineer, I want to see all systems and their dependencies so that I can assess blast radius" |
+| Behaviour Flow View | Orchestration flows, events, decisions, state machines | L3 | "As a developer, I want to see the end-to-end flow so that I can understand where my service fits" |
+| Dependency Graph | Service-to-service and system-to-system dependencies | L3 | "As a platform engineer, I want to see dependencies so that I can plan upgrades safely" |
+| Impact Assessment Report | Structured output of impact agent run | All layers | "As a change manager, I want to see what a regulation change affects so that I can plan the response" |
+| Gap Analysis | Domain concepts not yet functionally or technically realised | L1 vs L2/L3 | "As a portfolio manager, I want to see unimplemented capabilities so that I can prioritise investment" |
 
 ---
 
@@ -296,3 +456,21 @@ The same inventory data supports multiple views:
 ## Key Design Principle
 
 The system is not a document store. Every ingested artifact must ultimately contribute to populating, updating, or evidencing one or more typed inventory entries with explicit relationships. The document is the evidence; the inventory entry is the assertion. The graph connects assertions. The views interpret the graph. The agents reason over the graph.
+
+Decisions are the highest-value nodes in the graph. They are where regulation bites, where business logic concentrates, where errors are most costly, and where impact assessment yields the most signal. The platform exists primarily to make decisions visible, traceable, and assessable.
+
+---
+
+## Risks and Mitigations
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| LLM extraction accuracy insufficient for production use | Medium | High | Golden dataset evals from Phase 1; confidence thresholds gate auto-merge; human review queue |
+| Ontology becomes too complex to maintain | Medium | Medium | Start minimal (L1 only), extend per OCP; schema validation prevents drift; weekly arch review |
+| Graph becomes stale as source documents evolve | High | Medium | Staleness detection agent (Phase 5); source polling/webhook for change detection; TTL policies |
+| Entity resolution produces false merges | Medium | High | Conservative thresholds; human approval for low-confidence merges; undo capability via event log |
+| Performance degrades as graph grows | Low | Medium | Graph DB selection deferred until load profile known; indexing strategy; query optimisation budget |
+| Breaking ontology changes after data exists | Low | High | Semantic versioning; additive-only minor versions; migration pipelines for major versions; bi-temporal model preserves history |
+| Scope creep from multiple domain onboarding simultaneously | Medium | Medium | Single domain pilot (Payments) before expanding; domain packs isolated from core; clear phase gates |
+| Vendor lock-in on graph DB or LLM provider | Low | Medium | Port/adapter architecture; abstract interfaces; gateway pattern for LLM; proven by Phase 0 OCP test |
+| Team lacks DDD expertise | Medium | Medium | Domain architect role required; DDD training; ontology reviews; golden datasets encode correct classifications |

@@ -1,0 +1,2 @@
+Loose operational notes captured as plaintext, not Markdown.
+No heading structure here.

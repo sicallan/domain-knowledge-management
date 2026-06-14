@@ -1,0 +1,12 @@
+# Architecture Decision Records
+
+This directory records significant architectural decisions for the Domain Knowledge
+Management platform. Each ADR captures the context, the decision, and its consequences at
+a point in time. ADRs are immutable once accepted — supersede rather than rewrite.
+
+Format: `NNNN-short-title.md`. Status one of: *Proposed*, *Accepted*, *Accepted (direction)*,
+*Superseded by NNNN*, *Deprecated*.
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| [0001](./0001-intermediate-jsonl-vs-okf-interchange.md) | Intermediate format (typed JSONL) vs OKF interchange | Accepted (direction) |

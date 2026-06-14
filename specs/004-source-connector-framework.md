@@ -12,6 +12,8 @@ The Source Connector Framework provides a plugin-based architecture for ingestin
 - Source metadata and provenance tracking
 - Plugin discovery and lifecycle management
 
+> **Proposed (pending [ADR-0001](../docs/adr/0001-intermediate-jsonl-vs-okf-interchange.md)):** an **OKF connector** that ingests [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) Knowledge Bundles (Markdown + YAML frontmatter) as a source type. Bundles may be authored by humans or exported from existing catalogs (Dataplex, Unity Catalog, Collibra), then flow through normal extraction into typed JSONL. Implementation deferred to the proposed *spec 017 — OKF Import/Export Adapter*; this is the natural ingestion home for it.
+
 **Out of scope:**
 - Extraction/enrichment logic (what happens after ingestion) — see Enrichment Pipeline spec
 - Document parsing (PDF→text, XML→structured) — separate parsing utilities consumed by connectors

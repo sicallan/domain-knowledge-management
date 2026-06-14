@@ -25,8 +25,10 @@ Initial focus domain: **Payments**. Platform design remains reusable for any bus
 - Operational procedures, manuals, guides
 
 ### Canonical formats
-- **Markdown (`.md`)** for narrative/unstructured text and extracted summaries
-- **JSON/JSONL (`.json`, `.jsonl`)** for structured records, events, metrics, extracted entities/relations
+- **Markdown (`.md`)** for narrative/unstructured text and extracted summaries — following [Open Knowledge Format (OKF)](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) frontmatter conventions for the narrative/evidence and interchange layer
+- **JSON/JSONL (`.json`, `.jsonl`)** for structured records, events, metrics, extracted entities/relations — JSONL is the internal *typed* extraction→loader format (see [spec 003](specs/003-intermediate-jsonl-and-loaders.md))
+
+> OKF is adopted at the pipeline **edges** (ingestion source + publication/interchange output), not as the internal intermediate format, which stays typed JSONL. See [ADR-0001](docs/adr/0001-intermediate-jsonl-vs-okf-interchange.md).
 
 ---
 
@@ -298,6 +300,7 @@ For Payments, example mapping:
 | D4 | Agentic correction with human-in-loop thresholds | Accepted | Enables scale with controlled trust |
 | D5 | Domain packs over global ontology | Accepted | Domain-agnostic core with domain-specific acceleration |
 | D6 | Monorepo with bounded modules | Accepted | Separation of concerns with coordinated evolution |
+| D7 | OKF as edge interchange format; typed JSONL stays internal | Accepted (direction) | Standards-based human/agent interop at ingestion + publication edges without weakening the typed graph backbone — see [ADR-0001](docs/adr/0001-intermediate-jsonl-vs-okf-interchange.md) |
 
 ---
 

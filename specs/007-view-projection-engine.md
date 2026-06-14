@@ -12,6 +12,8 @@ The View Projection Engine materialises the typed views defined in the plan (Dom
 - View caching and invalidation
 - Extension point: adding new views without modifying existing code
 
+> **Proposed (pending [ADR-0001](../docs/adr/0001-intermediate-jsonl-vs-okf-interchange.md)):** an **OKF Knowledge Bundle** projection target. Because the engine already materialises views from the graph, exporting a scope (e.g. a bounded context or domain map) as an [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) bundle of Markdown + YAML-frontmatter concepts is just another projection — for human browsing, agent/RAG consumption, cross-org interchange, and builder-agent hand-off. Our typed relationships are preserved via a DKM OKF *profile* (typed `relationships:` frontmatter); plain OKF degrades them to markdown links. Implementation deferred to the proposed *spec 017 — OKF Import/Export Adapter*.
+
 **Out of scope:**
 - UI rendering of views (that's the Knowledge Explorer / UI spec)
 - Raw graph queries (that's the Query Interface spec)

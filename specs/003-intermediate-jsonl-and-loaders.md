@@ -223,6 +223,8 @@ interface LoaderOrchestrator {
 
 *Rationale*: The extraction pipeline produces entries one at a time as it processes documents. JSONL allows streaming writes and reads — no need to buffer the entire result in memory. It's human-readable (critical for debugging LLM extraction), appendable, and can be processed with standard Unix tools. Schema validation happens at the consumer level using the Schema Module. For large files, gzip compression can be applied transparently.
 
+> **Note — internal format vs interchange format.** JSONL here is the *internal* extraction→loader integration boundary. It is intentionally stricter and more granular than human/agent **publication** formats such as the [Open Knowledge Format (OKF)](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md): it carries first-class **typed** relationships, fact-grained provenance, and JSON Schema enforcement that OKF's prose-typed markdown links do not. OKF is therefore complementary, not a replacement — adopted at the pipeline *edges* (an ingestion source type and a publication/view-projection output), never as this intermediate format. See [ADR-0001](../docs/adr/0001-intermediate-jsonl-vs-okf-interchange.md).
+
 ---
 
 ### Decision 2: Relationship Entries — Inline or Separate File

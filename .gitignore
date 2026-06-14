@@ -1,0 +1,31 @@
+# Archon runtime artifacts — NEVER commit
+.archon/state/
+.archon/.env
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Node / TypeScript
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editor / OS
+.DS_Store
+*.log
+.idea/
+*.swp

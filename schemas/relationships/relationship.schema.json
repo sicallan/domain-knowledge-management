@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/relationships/relationship.schema.json",
+  "title": "Relationship",
+  "description": "A typed, directed edge between two inventory entries. Structural shape only — cardinality constraints are enforced by the relationship-type registry (see modules/schema).",
+  "type": "object",
+  "required": ["id", "type", "relationshipType", "sourceId", "targetId", "version", "evidencedBy"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "type": { "const": "Relationship" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "relationshipType": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Edge type (e.g. evaluates, belongsTo, implements). Not a closed enum: new edge types register without schema modification (OCP)."
+    },
+    "sourceId": { "type": "string", "minLength": 1 },
+    "targetId": { "type": "string", "minLength": 1 },
+    "direction": { "type": "string", "enum": ["directed", "bidirectional"], "default": "directed" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "evidencedBy": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "https://dkm.dev/schemas/common/provenance.schema.json#/$defs/evidence" }
+    },
+    "metadata": { "type": "object" }
+  }
+}

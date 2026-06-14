@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/common/provenance.schema.json",
+  "title": "Provenance",
+  "description": "Reusable provenance definitions. Every asserted fact must be evidenced.",
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "description": "A single evidence link tying an assertion to its source.",
+      "required": ["source", "fetchedAt"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1, "description": "Source document path or identifier." },
+        "location": { "type": "string", "description": "Location within the source (page, section, row, line)." },
+        "fetchedAt": { "type": "string", "format": "date-time" },
+        "sourceAuthority": {
+          "type": "string",
+          "enum": ["regulatory", "scheme", "vendor", "project", "operational"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@dkm/loaders",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Loader Port (spec 003 §Loader Port Interface): abstract LoaderPort, contract test suite, and an in-memory stub. Concrete graph/vector loaders are Phase 1.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@dkm/schema": "workspace:*"
+  }
+}

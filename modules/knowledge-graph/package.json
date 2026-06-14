@@ -1,0 +1,14 @@
+{
+  "name": "@dkm/knowledge-graph",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Graph Persistence Port (spec 002): abstract graph port, adapter-agnostic contract test suite, and an in-memory adapter with event log.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@dkm/schema": "workspace:*"
+  }
+}

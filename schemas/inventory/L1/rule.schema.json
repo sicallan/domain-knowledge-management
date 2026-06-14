@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/rule.schema.json",
+  "title": "Rule",
+  "description": "L1/L2 — A single evaluable statement: validation, decision, or constraint.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["expression", "ruleType"],
+  "properties": {
+    "type": { "const": "Rule" },
+    "expression": { "type": "string", "minLength": 1 },
+    "ruleType": { "type": "string", "enum": ["validation", "decision", "constraint"] },
+    "source": { "type": "string" },
+    "effectiveDate": { "type": "string", "format": "date-time" },
+    "expiryDate": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

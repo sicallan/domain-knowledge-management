@@ -1,0 +1,14 @@
+{
+  "name": "@dkm/quality",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Quality Scoring Framework (spec 008): six-dimension composite quality scoring for inventory entries with configurable weights, thresholds, and decay.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@dkm/schema": "workspace:*"
+  }
+}

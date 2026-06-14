@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/decision.schema.json",
+  "title": "Decision",
+  "description": "L1/L2 — A point where logic selects a path/outcome from inputs, rules, and context. The highest-value node type. Links to rules/reference-data/invariants are modelled as relationships, not entry fields.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name", "decisionType", "outcomes"],
+  "properties": {
+    "type": { "const": "Decision" },
+    "name": { "type": "string", "minLength": 1 },
+    "decisionType": { "type": "string", "enum": ["automated", "manual", "hybrid"] },
+    "inputs": { "type": "array", "items": { "type": "string" } },
+    "outcomes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Possible decision outcomes. Every decision must have at least one outcome."
+    },
+    "owner": { "type": "string" },
+    "frequency": { "type": "string" },
+    "latencyBudget": { "type": "string" }
+  }
+}

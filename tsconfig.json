@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@dkm/schema": ["modules/schema/src/index.ts"],
+      "@dkm/schema/*": ["modules/schema/src/*"],
+      "@dkm/knowledge-graph": ["modules/knowledge-graph/src/index.ts"],
+      "@dkm/knowledge-graph/*": ["modules/knowledge-graph/src/*"],
+      "@dkm/loaders": ["modules/loaders/src/index.ts"],
+      "@dkm/loaders/*": ["modules/loaders/src/*"],
+      "@dkm/quality": ["modules/quality-verification/src/index.ts"],
+      "@dkm/quality/*": ["modules/quality-verification/src/*"]
+    }
+  },
+  "include": ["modules/*/src/**/*.ts", "modules/*/test/**/*.ts", "*.config.ts"]
+}

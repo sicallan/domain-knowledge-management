@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/business-capability.schema.json",
+  "title": "BusinessCapability",
+  "description": "L1 — A business capability: what the business is able to do, independent of how it is implemented.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name"],
+  "properties": {
+    "type": { "const": "BusinessCapability" },
+    "name": { "type": "string", "minLength": 1 },
+    "level": { "type": "integer", "minimum": 1, "description": "Capability decomposition level (1 = top-level)." },
+    "parentCapability": { "type": "string", "description": "ID of the parent capability, if any." },
+    "description": { "type": "string" }
+  }
+}

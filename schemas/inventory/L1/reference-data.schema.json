@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/reference-data.schema.json",
+  "title": "ReferenceData",
+  "description": "L1/L2 — A managed reference dataset consumed by rules, decisions, and services.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name", "owner"],
+  "properties": {
+    "type": { "const": "ReferenceData" },
+    "name": { "type": "string", "minLength": 1 },
+    "owner": { "type": "string", "minLength": 1 },
+    "updateFrequency": { "type": "string" },
+    "consumingConcepts": { "type": "array", "items": { "type": "string" } },
+    "sourceOfTruth": { "type": "string" },
+    "refreshMechanism": { "type": "string" },
+    "stalenessPolicy": { "type": "string" }
+  }
+}

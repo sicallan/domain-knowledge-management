@@ -1,0 +1,28 @@
+name: flesh-out-phase
+description: |
+  Use when: fleshing out all features for an implementation phase into detailed
+  feature-definition docs + GitHub issues (no application code).
+  Input: the phase id as the run message (e.g. "1").
+  Output: a PR adding docs/features/phase-<N>/*.md, plus one tracking issue per feature.
+provider: claude
+
+nodes:
+  - id: flesh-out
+    command: flesh-out-phase
+    model: opus
+
+  - id: open-pr
+    depends_on: [flesh-out]
+    bash: |
+      set -euo pipefail
+      # Defensive: capture anything the agent left uncommitted.
+      git add -A
+      if ! git diff --cached --quiet; then
+        git commit -m "Flesh out phase features: definition docs + issues"
+      fi
+      BRANCH="$(git branch --show-current)"
+      git push -u origin "$BRANCH"
+      gh pr create --base main --head "$BRANCH" \
+        --title "Flesh out Phase features — definitions + backlog" \
+        --fill || echo "PR may already exist for $BRANCH"
+    timeout: 120000

@@ -84,8 +84,14 @@ loader purely via files (no in-process coupling).
 5. **Schema-invalid exclusion** — *Given* the LLM returns a malformed payload, *when* validation runs,
    *then* the entry is excluded, logged, and `stats.validationFailures` increments.
 6. **Golden-dataset eval** — *Given* the Payments golden dataset, *when* `evaluate()` runs, *then* it
-   reports precision/recall/F1 overall and per-type and the pipeline meets the agreed Phase 1 target
-   (target value to be set with the team — see Open Questions).
+   reports precision/recall/F1 overall and per-type, and the pipeline meets the Phase 1 floor set in
+   [D-P1.5](../../phase-1/decisions.md): **entities** overall precision ≥ 0.85 / recall ≥ 0.70 / F1 ≥
+   0.77 with auto-merge-band (`confidence ≥ 0.8`) precision ≥ 0.90; **relationships** overall precision
+   ≥ 0.75 / recall ≥ 0.60 / F1 ≥ 0.67 with auto-merge-band precision ≥ 0.85; per-type F1 ≥ 0.65
+   (entities) / ≥ 0.55 (relationships) for any type with ≥ 5 golden instances. These are a revisable
+   *floor* (the gate), not an aspiration. The auto-merge-band precision bar is the strict graph-integrity
+   gate; overall recall is an intentionally lower coverage floor because real-but-uncertain extractions
+   route to the human review queue rather than being lost (D-P1.5 two-tier gating).
 7. **Provenance** — *Given* an entity extracted from section 3 of a doc, *when* emitted, *then*
    `source.location` records that section and `source.file`/`sourceAuthority` match the input document.
 8. **Escalation** — *Given* a first run flags an item below the low-confidence band, *when* re-run with
@@ -120,7 +126,8 @@ class LLMGateway(Protocol):
 - **Contract — `test_llm_gateway_contract.py`**: any `LLMGateway` impl honours the structured-output
   contract; a **fake gateway** drives deterministic pipeline tests (no network).
 - **Golden-dataset — `test_extraction_eval.py`**: run against `evals/payments-golden/`; assert
-  precision/recall/F1 ≥ agreed thresholds overall and per type; confidence-calibration sanity.
+  precision/recall/F1 ≥ the [D-P1.5](../../phase-1/decisions.md) floors overall and per type, plus the
+  auto-merge-band precision bar; confidence-calibration reported as a sanity signal (not gated).
 - **Integration — `test_pipeline_end_to_end.py`**: `CanonicalDocument` fixtures → both JSONL files →
   validate every line against the Schema Module.
 
@@ -135,7 +142,7 @@ class LLMGateway(Protocol):
 7. [ ] Implement name+type entity resolution (conservative) + tests.
 8. [ ] Implement confidence scoring + schema-validation gate + tests.
 9. [ ] Implement streaming JSONL emission (entities + relationships + metadata) + tests.
-10. [ ] Build `evals/payments-golden/` labelled dataset + eval harness; agree target metrics.
+10. [ ] Build `evals/payments-golden/` labelled dataset + eval harness; gate on the D-P1.5 floors.
 11. [ ] End-to-end integration test wiring Feature 01 fixtures through to JSONL.
 
 ## 10. OCP extension points
@@ -148,9 +155,11 @@ class LLMGateway(Protocol):
 
 ## 11. Open questions / risks
 
-- **Phase 1 precision/recall target** — spec/plan say "target precision/recall" but no number is set.
-  **Team must agree the Phase 1 bar** before tests are meaningful (top project risk: extraction
-  accuracy). Surface in the issue.
+- **Phase 1 precision/recall target** — ✅ **RESOLVED** in [D-P1.5](../../phase-1/decisions.md)
+  (Extraction quality bar). Entities: precision ≥ 0.85 / recall ≥ 0.70 / F1 ≥ 0.77, auto-merge-band
+  precision ≥ 0.90. Relationships: precision ≥ 0.75 / recall ≥ 0.60 / F1 ≥ 0.67, auto-merge-band
+  precision ≥ 0.85. Set as a revisable Phase 1 floor with a two-tier gate (strict precision where
+  extractions auto-merge; lower recall floor with a human review queue). See acceptance criterion 6.
 - Spec Open Q1 (prompt versioning) — adopt "prompts as versioned files + golden regression per
   version"; confirm.
 - Spec Open Q3 (entity-resolution context window) — moot in Phase 1 (name+type only); revisit when

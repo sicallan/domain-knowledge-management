@@ -112,6 +112,32 @@ spec-driven development. Repo config lives in [.archon/](.archon/) (see [.archon
 - Base branch for worktrees: `main`.
 - Reusable command templates: `.archon/commands/`. Workflow definitions: `.archon/workflows/`.
 - `.archon/state/` and `.archon/.env` are gitignored — never commit them.
+- Existing reusable workflow: `flesh-out-phase` — expands a phase's `specs/` into
+  `docs/features/phase-<N>/*.md` + GitHub issues (no code). Run it as `… "<phase id>"`.
+
+### Operational gotchas (learned the hard way — read before running Archon)
+
+1. **Always run workflows in the background** (`run_in_background: true`) and tail the output
+   file the CLI prints — runs are long (~5–10 min) and block their shell.
+2. **Suppress the nested-Claude warning.** Running inside Claude Code sets `CLAUDECODE=1`;
+   prefix Archon commands with `ARCHON_SUPPRESS_NESTED_CLAUDE_WARNING=1`. If a run hangs
+   silently, that env is the first thing to check (`archon serve` from a plain shell is the
+   documented fallback).
+3. **Commit custom commands/workflows to `main` before running.** Worktrees branch off `main`,
+   so a workflow/command that only exists locally (uncommitted) won't be discovered in the run.
+4. **`archon-assist` runs in the *live checkout*** (`worktree.enabled: false`) and **rejects
+   `--branch`**. To keep `main` clean, `git checkout -b <branch>` first, then run it with **no**
+   `--branch` flag — its edits land on the current branch. Worktree-based workflows (e.g.
+   `flesh-out-phase`) take `--branch <name>` as normal.
+5. **Squash-merge breaks `archon complete`.** After a squash-merge the worktree's original
+   commits aren't in `main`'s ancestry, so cleanup is blocked; use
+   `archon complete <branch> --force`. Likewise `gh pr merge --delete-branch` can't delete a
+   local branch while an Archon worktree still holds it — complete the worktree first.
+6. **Harmless noise to ignore:** `no such table: remote_agent_user_ai_prefs` (a migration gap in
+   `~/.archon/archon.db`, logged as a warning, run continues) and `worktree_file_copy_partial`
+   for missing `.env`/`.env.local` (nothing to copy).
+7. **Run Archon CLI calls as single commands**, not compound (`&&`/`;`) one-liners — the skill's
+   own startup health-check (`archon workflow list`) can trip the permission gate when chained.
 
 ## GitHub project structure
 

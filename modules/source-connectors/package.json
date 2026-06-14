@@ -1,0 +1,14 @@
+{
+  "name": "@dkm/source-connectors",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Source Connector Framework (spec 004): SourceConnector port, explicit-registration ConnectorRegistry, reusable connector contract suite, and the filesystem/Markdown connector (Phase 1, Feature 01).",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@dkm/schema": "workspace:*"
+  }
+}

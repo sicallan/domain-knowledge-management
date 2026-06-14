@@ -435,7 +435,7 @@ Nothing gets built without a failing test first. Applied at every level:
 | Step | Deliverable | TDD approach |
 |---|---|---|
 | 1.1 | Source connector: file/markdown ingestion adapter (plugin interface) | Test: adapter produces canonical output for fixture inputs |
-| 1.2 | Enrichment module: LLM-based extraction producing **intermediate JSONL output** conforming to the fixed-core schema (see *Intermediate JSONL Format & Multi-Store Loader Architecture*) | Test: extraction against golden dataset achieves target precision/recall; JSONL output validates against schema |
+| 1.2 | Enrichment module: LLM-based extraction producing **intermediate JSONL output** conforming to the fixed-core schema (see *Intermediate JSONL Format & Multi-Store Loader Architecture*) | Test: extraction against golden dataset meets the Phase 1 precision/recall **floor** set in [D-P1.5](docs/phase-1/decisions.md) (entities P≥0.85/R≥0.70, auto-merge-band precision ≥0.90; relationships P≥0.75/R≥0.60); JSONL output validates against schema |
 | 1.3 | Graph loader: first loader implementation reading from intermediate JSONL and populating graph store (start with lightweight: e.g., in-memory or SQLite-backed for dev, Neo4j for integration) | Test: loader contract tests pass; JSONL→graph round-trip produces expected state |
 | 1.4 | Query interface: simple API to retrieve inventory items and traverse relationships | Test: query returns expected results for seeded graph |
 | 1.5 | First view: Domain Map view projection from graph | Test: view output matches expected structure for known graph state |
@@ -661,7 +661,7 @@ Additional storage targets may be introduced as use cases emerge — the archite
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| LLM extraction accuracy insufficient for production use | Medium | High | Golden dataset evals from Phase 1; confidence thresholds gate auto-merge; human review queue |
+| LLM extraction accuracy insufficient for production use | Medium | High | Golden dataset evals from Phase 1 gated on the [D-P1.5](docs/phase-1/decisions.md) quality floor; confidence thresholds gate auto-merge (strict auto-merge-band precision); human review queue absorbs lower-confidence extractions |
 | Ontology becomes too complex to maintain | Medium | Medium | Start minimal (L1 only), extend per OCP; schema validation prevents drift; weekly arch review |
 | Graph becomes stale as source documents evolve | High | Medium | Staleness detection agent (Phase 5); source polling/webhook for change detection; TTL policies |
 | Entity resolution produces false merges | Medium | High | Conservative thresholds; human approval for low-confidence merges; undo capability via event log |

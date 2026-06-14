@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/widget.schema.json",
+  "title": "Widget",
+  "description": "OCP fixture — a brand-new inventory type added purely by dropping a schema file. No registry, validator, or existing-schema code is modified.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name", "widgetKind"],
+  "properties": {
+    "type": { "const": "Widget" },
+    "name": { "type": "string", "minLength": 1 },
+    "widgetKind": { "type": "string", "enum": ["sprocket", "cog"] }
+  }
+}

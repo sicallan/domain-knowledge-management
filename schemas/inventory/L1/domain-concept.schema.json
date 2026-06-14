@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/domain-concept.schema.json",
+  "title": "DomainConcept",
+  "description": "L1 — A Domain-Driven Design concept: aggregate, entity, value object, domain event, policy, invariant, command, or query.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name", "conceptType"],
+  "properties": {
+    "type": { "const": "DomainConcept" },
+    "name": { "type": "string", "minLength": 1 },
+    "conceptType": {
+      "type": "string",
+      "enum": ["aggregate", "entity", "value-object", "domain-event", "policy", "invariant", "command", "query"]
+    },
+    "subdomain": { "type": "string" },
+    "boundedContext": { "type": "string" },
+    "description": { "type": "string" }
+  }
+}

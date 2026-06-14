@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/common/temporal.schema.json",
+  "title": "TemporalValidity",
+  "description": "Bi-temporal validity fields. validFrom is required; validTo null means currently valid.",
+  "type": "object",
+  "required": ["validFrom"],
+  "properties": {
+    "validFrom": { "type": "string", "format": "date-time" },
+    "validTo": { "type": ["string", "null"], "format": "date-time" },
+    "transactionTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the system learned this fact (transaction time)."
+    }
+  }
+}

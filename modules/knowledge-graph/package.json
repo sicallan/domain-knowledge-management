@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@dkm/schema": "workspace:*"
+    "@dkm/schema": "workspace:*",
+    "neo4j-driver": "^6.1.0"
   }
 }

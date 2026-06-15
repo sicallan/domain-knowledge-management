@@ -89,6 +89,33 @@ export function runGraphPortContractTests(name: string, factory: GraphPortFactor
         await port.upsertNode(node);
         expect(await port.nodeExists(node.id)).toBe(true);
       });
+
+      it("removeNode hard-deletes the node, drops incident edges, and emits a reversal", async () => {
+        const port = await factory();
+        const decision = makeNode("Decision", { name: "Authorise", decisionType: "automated", outcomes: ["ok"] });
+        const rule = makeNode("Rule", { expression: "x>0", ruleType: "validation" });
+        await port.upsertNode(decision);
+        await port.upsertNode(rule);
+        await port.createEdge(makeEdge("evaluates", decision.id, rule.id));
+
+        const result = await port.removeNode(decision.id);
+        expect(result.success).toBe(true);
+        // Physically gone (not merely retired).
+        expect(await port.nodeExists(decision.id)).toBe(false);
+        expect(await port.getNode(decision.id)).toBeNull();
+        // Incident edge removed with it.
+        expect(await port.getEdges(rule.id, "in")).toHaveLength(0);
+        // The reversal is recorded in the event log.
+        const retired = await port.getEvents(undefined, undefined, [{ mutationType: "NodeRetired", entityId: decision.id }]);
+        expect(retired).toHaveLength(1);
+      });
+
+      it("removeNode on a missing node fails without throwing", async () => {
+        const port = await factory();
+        const result = await port.removeNode("does-not-exist");
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe("NOT_FOUND");
+      });
     });
 
     describe("2. Edge operations & cardinality", () => {

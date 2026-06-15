@@ -5,7 +5,8 @@
     "types": ["node"],
     "baseUrl": "../..",
     "paths": {
-      "@dkm/schema": ["modules/schema/src/index.ts"]
+      "@dkm/schema": ["modules/schema/src/index.ts"],
+      "@dkm/knowledge-graph": ["modules/knowledge-graph/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]

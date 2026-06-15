@@ -94,6 +94,10 @@ export class InMemoryGraphAdapter implements GraphPort {
     return this.applyDelete(id, this.newTransactionId());
   }
 
+  async removeNode(id: string): Promise<MutationResult> {
+    return this.applyRemoveNode(id, this.newTransactionId());
+  }
+
   async nodeExists(id: string): Promise<boolean> {
     return this.nodes.has(id);
   }
@@ -304,6 +308,26 @@ export class InMemoryGraphAdapter implements GraphPort {
     existing.history.push({ timestamp, state: clone(retired), retired: true });
     const eventId = this.emit("NodeRetired", retired.type, id, previous, retired, {}, txId, timestamp);
     return { success: true, eventId, revision: existing.revision };
+  }
+
+  private applyRemoveNode(id: string, txId: string): MutationResult {
+    const existing = this.nodes.get(id);
+    if (!existing) {
+      return { success: false, eventId: "", error: { code: "NOT_FOUND", message: `Node ${id} does not exist` } };
+    }
+    // Physically remove the node and every edge incident to it.
+    const timestamp = this.clock();
+    const previous = clone(existing.current);
+    this.nodes.delete(id);
+    for (let i = this.edges.length - 1; i >= 0; i -= 1) {
+      const edge = this.edges[i]!;
+      if (edge.sourceId === id || edge.targetId === id) {
+        this.edges.splice(i, 1);
+        this.emit("EdgeRemoved", `Relationship:${edge.relationshipType}`, edge.id, edge, null, {}, txId, this.clock());
+      }
+    }
+    const eventId = this.emit("NodeRetired", previous.type, id, previous, null, {}, txId, timestamp);
+    return { success: true, eventId };
   }
 
   private applyCreateEdge(edge: RelationshipEntry, txId: string): MutationResult {

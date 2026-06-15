@@ -104,6 +104,11 @@ don't scaffold empty modules ahead of their phase.
 - Every asserted fact must be **evidenced** (linked to source provenance) and **versioned**
   (lifecycle_status + bi-temporal validFrom/validTo).
 - Capture architectural decisions as **ADRs** in `docs/adr/`.
+- **CI stays green without secrets or external services.** Deterministic / fake-backed tests are
+  the CI gate; any test needing a live dependency auto-skips unless its env var is set
+  (e.g. `ANTHROPIC_API_KEY` for the LLM golden eval, `NEO4J_URI` for graph-adapter parity), and
+  its real-world verification is tracked as a **follow-up issue**. Don't add secrets or service
+  containers to the required CI path without an explicit decision.
 
 ## Building with Archon
 
@@ -117,8 +122,15 @@ spec-driven development. Repo config lives in [.archon/](.archon/) (see [.archon
 
 ### Operational gotchas (learned the hard way — read before running Archon)
 
-1. **Always run workflows in the background** (`run_in_background: true`) and tail the output
-   file the CLI prints — runs are long (~5–10 min) and block their shell.
+1. **Run workflows in the background, with an *unbuffered* log.** Runs are long (~5–10 min).
+   Best pattern: run the `archon` command itself as a harness background task
+   (`run_in_background: true`) redirecting raw output to a file
+   (`… > logs/archon/<branch>-<ts>.log 2>&1`) — you get a completion notification *and* a
+   readable log. [`scripts/start-archon.sh`](scripts/start-archon.sh) is a convenience launcher
+   (sets the env, detaches, logs to `logs/archon/`), but it detaches via `nohup` so the harness
+   won't notify on completion — pair it with a PID-watcher (`while kill -0 <pid>; do …`).
+   **Never pipe `archon` through `tail`/`head`** — the pipe buffers and hides all interim output
+   until the run ends, making a healthy run look dead.
 2. **Suppress the nested-Claude warning.** Running inside Claude Code sets `CLAUDECODE=1`;
    prefix Archon commands with `ARCHON_SUPPRESS_NESTED_CLAUDE_WARNING=1`. If a run hangs
    silently, that env is the first thing to check (`archon serve` from a plain shell is the
@@ -138,6 +150,21 @@ spec-driven development. Repo config lives in [.archon/](.archon/) (see [.archon
    for missing `.env`/`.env.local` (nothing to copy).
 7. **Run Archon CLI calls as single commands**, not compound (`&&`/`;`) one-liners — the skill's
    own startup health-check (`archon workflow list`) can trip the permission gate when chained.
+8. **Recovering a session-limit failure (common).** When a run dies mid-`implement` on
+   `You've hit your session limit`, the run fails and `create-pr` is skipped, but **the partial
+   work survives in the worktree**. `--resume` does *not* work afterwards (the abort marks the
+   run non-resumable → "No resumable run found"). Recover by either: **(a) finish by hand** — if
+   implementation + tests were done and only commit/PR remain, verify green in the worktree,
+   `git commit`/`push`, `gh pr create` (don't burn another run); or **(b) `archon continue
+   <branch> "<precise what's-left message>"`** — resumes the worktree with prior context, but it
+   runs `archon-assist`, so the create-PR DAG node won't fire — **tell it to open the PR itself**.
+   Credits reset on a rolling 5-hour window (`rateLimitType:"five_hour"` `resetsAt` in the log).
+9. **Kill stray processes by PID, not `pkill -f <pattern>`.** If the pattern also appears in your
+   own command line (e.g. echoing/pkilling `@archon/web dev`), `pkill -f` matches and kills its
+   own shell mid-command. Use `pgrep -af` to find the PID, then `kill <pid>`. Leftover Archon dev
+   servers to watch for: `bun --filter @archon/web dev` (Vite UI on :5173) and `@archon/server dev`.
+10. **The main checkout may have no `node_modules`** after worktree-based work — run `pnpm install`
+    before running tests/scripts/spikes directly in the primary working directory.
 
 ## GitHub project structure
 

@@ -439,8 +439,11 @@ Nothing gets built without a failing test first. Applied at every level:
 | 1.3 | Graph loader: first loader implementation reading from intermediate JSONL and populating graph store (start with lightweight: e.g., in-memory or SQLite-backed for dev, Neo4j for integration) | Test: loader contract tests pass; JSONL→graph round-trip produces expected state |
 | 1.4 | Query interface: simple API to retrieve inventory items and traverse relationships | Test: query returns expected results for seeded graph |
 | 1.5 | First view: Domain Map view projection from graph | Test: view output matches expected structure for known graph state |
+| 1.6 | **Diagram exporter + demo CLI** ([D-P1.6](docs/phase-1/decisions.md)): render the Domain Map (or graph) as a viewable **PlantUML** DDD diagram; a one-command CLI runs connector→extraction→loader→projection→diagram on a small Payments doc set — the *visible* end of the slice | Test: exporter emits valid PlantUML for a known graph; demo CLI produces a diagram end-to-end |
 
-**OCP validation**: add a second connector (e.g., JSON ingestion) — must work without modifying core pipeline code, only adding a new adapter. Add a second loader (e.g., in-memory vector store) — must work without modifying extraction or the first loader.
+> **Demo-first sequencing ([D-P1.6](docs/phase-1/decisions.md)):** step 1.5's Domain Map view emits UI-ready *JSON, not a viewable diagram* — so step **1.6** (exporter + demo CLI) is added as the first meaningful, *visible* goal, and the OCP validation below is **deferred until after** it. Build order: 1.1 ✅ → 1.2 ✅ → 1.3 ✅ → minimal 1.4 → 1.5 → 1.6 → OCP (second connector, second loader).
+
+**OCP validation** (deferred until after step 1.6 per [D-P1.6](docs/phase-1/decisions.md); still required): add a second connector (e.g., JSON ingestion) — must work without modifying core pipeline code, only adding a new adapter. Add a second loader (e.g., in-memory vector store) — must work without modifying extraction or the first loader.
 
 ---
 

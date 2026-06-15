@@ -1,0 +1,86 @@
+{
+  "id": "payments-golden-v1",
+  "name": "Payments golden dataset (Phase 1)",
+  "documents": [
+    {
+      "id": "golden-authorisation",
+      "file": "documents/authorisation.md",
+      "sourcePath": "payments/authorisation.md",
+      "sourceAuthority": "scheme",
+      "title": "Card Authorisation"
+    },
+    {
+      "id": "golden-settlement",
+      "file": "documents/settlement.md",
+      "sourcePath": "payments/settlement.md",
+      "sourceAuthority": "scheme",
+      "title": "Settlement"
+    },
+    {
+      "id": "golden-refunds",
+      "file": "documents/refunds.md",
+      "sourcePath": "payments/refunds.md",
+      "sourceAuthority": "scheme",
+      "title": "Refunds"
+    },
+    {
+      "id": "golden-fraud-scoring",
+      "file": "documents/fraud-scoring.md",
+      "sourcePath": "payments/fraud-scoring.md",
+      "sourceAuthority": "scheme",
+      "title": "Fraud Scoring"
+    }
+  ],
+  "expectedEntities": [
+    { "type": "DomainConcept", "name": "Authorisation" },
+    { "type": "DomainConcept", "name": "Cardholder" },
+    { "type": "DomainConcept", "name": "Settlement" },
+    { "type": "DomainConcept", "name": "Settlement Batch" },
+    { "type": "DomainConcept", "name": "Refund" },
+    { "type": "Decision", "name": "Authorise Payment" },
+    { "type": "Decision", "name": "Net Settlement" },
+    { "type": "Decision", "name": "Approve Refund" },
+    { "type": "Decision", "name": "Score Transaction Risk" },
+    { "type": "ReferenceData", "name": "Scheme Fee Table" },
+    { "type": "ReferenceData", "name": "Fraud Blocklist" },
+    { "type": "ReferenceData", "name": "Risk Score Table" },
+    { "type": "BusinessCapability", "name": "Fraud Management" },
+    {
+      "type": "BusinessInvariant",
+      "name": "An authorisation must never exceed the cardholder's available balance"
+    },
+    {
+      "type": "BusinessInvariant",
+      "name": "The total of a settlement batch must equal the sum of its captured transactions"
+    },
+    {
+      "type": "BusinessInvariant",
+      "name": "A refund must not exceed the amount of the original payment"
+    },
+    {
+      "type": "Rule",
+      "name": "A payment card must not be expired at the time the authorisation is requested"
+    },
+    {
+      "type": "Rule",
+      "name": "A refund may only be raised within 180 days of the original settlement date"
+    }
+  ],
+  "expectedRelationships": [
+    {
+      "relationshipType": "consumes",
+      "sourceName": "Net Settlement",
+      "targetName": "Scheme Fee Table"
+    },
+    {
+      "relationshipType": "consumes",
+      "sourceName": "Score Transaction Risk",
+      "targetName": "Risk Score Table"
+    },
+    {
+      "relationshipType": "consumes",
+      "sourceName": "Score Transaction Risk",
+      "targetName": "Fraud Blocklist"
+    }
+  ]
+}

@@ -113,6 +113,12 @@ export interface GraphPort {
   upsertNode(node: InventoryEntry, options?: UpsertOptions): Promise<MutationResult>;
   getNode(id: string, atTime?: string): Promise<InventoryEntry | null>;
   deleteNode(id: string): Promise<MutationResult>;
+  /**
+   * Hard-remove a node and all of its incident edges. Unlike {@link deleteNode}
+   * (a soft retire), this physically deletes the node — used by loader
+   * `rollbackRun` to reverse a load. Emits a `NodeRetired` reversal event.
+   */
+  removeNode(id: string): Promise<MutationResult>;
   nodeExists(id: string): Promise<boolean>;
 
   // Edge operations

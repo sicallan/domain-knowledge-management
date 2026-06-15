@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dkm-enrichment"
+version = "0.1.0"
+description = "Phase 1 LLM extraction pipeline — CanonicalDocument[] → intermediate JSONL (the single Python component, D-P1.3)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "UNLICENSED" }
+dependencies = [
+  "pydantic>=2.7,<3",
+  "jsonschema>=4.21,<5",
+  "referencing>=0.30",
+]
+
+[project.optional-dependencies]
+# The ONLY place the Anthropic SDK is pulled in (D-P1.1). Install locally to run
+# the opt-in real-Claude golden eval (`pytest -m llm`); never required by CI.
+llm = ["anthropic>=0.39,<1"]
+dev = [
+  "pytest>=8.0,<9",
+  "pytest-asyncio>=0.23,<1",
+  "ruff>=0.6,<1",
+  "mypy>=1.11,<2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dkm_enrichment"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+  "llm: opt-in tests that call the real Claude gateway; auto-skip without ANTHROPIC_API_KEY (never a CI gate).",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "W", "N", "C4", "SIM"]
+# N815 (mixedCase class attributes) is intentionally ignored: the Pydantic models mirror the
+# spec 003/005 TypeScript interfaces and the JSONL fixed-core verbatim (camelCase field names
+# like `sourceEntityId`, `extractedAt`, `autoMergeBandPrecision`). Renaming them would break
+# the cross-language file contract this component exists to honour (D-P1.3).
+ignore = ["N815"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["dkm_enrichment"]
+mypy_path = "src"
+disallow_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+# anthropic is an optional extra; the deterministic suite and CI never install it,
+# so its types are not resolvable there. The ClaudeGateway imports it lazily.
+module = ["anthropic.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# jsonschema ships no inline types (and types-jsonschema is not a runtime dep); the
+# validator wraps it in a typed facade, so missing stubs here are safe to ignore.
+module = ["jsonschema", "jsonschema.*"]
+ignore_missing_imports = true

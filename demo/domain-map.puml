@@ -1,0 +1,29 @@
+@startuml domain-map
+title Payments — Domain Map (L1) · Phase 1 slice spike
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+legend right
+  Bounded context = source document (proxy until extraction emits BoundedContext)
+  <b>Decisions</b> highlighted — the highest-value nodes
+endlegend
+
+package "authorisation.md" <<Frame>> {
+  rectangle "Payment «aggregate»" as e_payment <<DomainConcept>> #90CAF9
+  rectangle "Card «entity»" as e_card <<DomainConcept>> #90CAF9
+  hexagon "Authorise Payment : Authorised / Declined" as e_authorise <<Decision>> #FFD54F
+  hexagon "Fraud Check : Pass / Refer" as e_fraud <<Decision>> #FFD54F
+  rectangle "Sufficient Funds : balance >= amount" as e_funds <<Rule>> #A5D6A7
+}
+
+package "limits.md" <<Frame>> {
+  rectangle "Per-Transaction Limit : amount <= schemeLimit" as e_txn_limit <<BusinessInvariant>> #CE93D8
+  card "Scheme Limits" as e_limits <<ReferenceData>> #FFAB91
+}
+
+e_payment --> e_card : contains
+e_payment --> e_txn_limit : governedBy
+e_authorise --> e_funds : evaluates
+e_authorise --> e_limits : consumes
+e_authorise --> e_fraud : triggers
+e_authorise --> e_payment : operatesOn
+@enduml

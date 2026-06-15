@@ -15,9 +15,18 @@ buildable feature definitions; they do not restate or contradict them.
 | [02](02-llm-extraction-pipeline.md) | LLM extraction pipeline → JSONL | 1.2 | [005](../../../specs/005-enrichment-extraction-pipeline.md), [003](../../../specs/003-intermediate-jsonl-and-loaders.md) | Py | Documents → typed intermediate JSONL via Claude behind a thin gateway; golden-dataset evals. |
 | [03](03-graph-loader.md) | Graph loader (JSONL → graph) | 1.3 | [003](../../../specs/003-intermediate-jsonl-and-loaders.md), [002](../../../specs/002-graph-persistence-port.md) | TS | First `LoaderPort`; populates graph via in-memory + Neo4j adapters; idempotent. |
 | [04](04-query-interface.md) | Query interface | 1.4 | [006](../../../specs/006-query-interface.md) | TS | Typed lookup + relationship traversal over the graph port; cursor pagination. |
-| [05](05-domain-map-view.md) | Domain Map view projection | 1.5 | [007](../../../specs/007-view-projection-engine.md) | TS | View engine + first projector; renders the Domain Map — the visible end of the slice. |
-| [06](06-json-connector-ocp.md) | JSON connector (OCP) | OCP | [004](../../../specs/004-source-connector-framework.md) | TS | **OCP gate**: second connector added with zero core edits. |
-| [07](07-vector-loader-stub-ocp.md) | Vector-loader stub (OCP) | OCP | [003](../../../specs/003-intermediate-jsonl-and-loaders.md) | TS | **OCP gate**: second loader ("load many") added with zero core edits. |
+| [05](05-domain-map-view.md) | Domain Map view projection | 1.5 | [007](../../../specs/007-view-projection-engine.md) | TS | View engine + first projector; produces the Domain Map as **UI-ready JSON** (not yet a viewable diagram). |
+| — | **Diagram exporter + demo CLI** | 1.6 | [007](../../../specs/007-view-projection-engine.md) | TS | **The visible end** ([D-P1.6](../../phase-1/decisions.md)): renders the Domain Map as a **PlantUML** DDD diagram; one-command end-to-end demo. *(feature doc TBD)* |
+| [06](06-json-connector-ocp.md) | JSON connector (OCP) | OCP | [004](../../../specs/004-source-connector-framework.md) | TS | **OCP gate** (deferred post-demo, D-P1.6): second connector added with zero core edits. |
+| [07](07-vector-loader-stub-ocp.md) | Vector-loader stub (OCP) | OCP | [003](../../../specs/003-intermediate-jsonl-and-loaders.md) | TS | **OCP gate** (deferred post-demo, D-P1.6): second loader ("load many") added with zero core edits. |
+
+## Build status & order (D-P1.6 — demo-first)
+
+`01` ✅ → `02` ✅ → `03` ✅ → **minimal `04`** (query: lookup + neighbourhood) → `05` (Domain Map) →
+**`1.6` diagram exporter + demo CLI** *(the first meaningful visual)* → then OCP `06`, `07`.
+Rationale: the planned "visible end" (`05`) emits JSON, not a diagram, so a thin PlantUML exporter
+is inserted ahead of the OCP gates — see [D-P1.6](../../phase-1/decisions.md). Every feature still
+ships; only the order changes.
 
 ## Slice flow
 

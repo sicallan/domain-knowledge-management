@@ -120,6 +120,33 @@ These floors are revisable: when `evals/payments-golden/` grows or prompts/model
 raise them via a follow-up decision. They exist to make the top project risk *measurable and
 gated* now, not to fix the ceiling.
 
+## D-P1.6 — Demo-first reprioritisation: a viewable diagram before OCP validation
+
+Added 2026-06-15, after the first three features ([01](../features/phase-1/01-filesystem-markdown-connector.md)
+→ [03](../features/phase-1/03-graph-loader.md)) merged. A plan review found that Phase 1's planned
+"visible end" (Domain Map view, step 1.5 / spec [007](../../specs/007-view-projection-engine.md))
+emits **UI-ready JSON, not a viewable diagram** — the first real *visual* of the extracted model
+would otherwise wait for the Phase 3 UI. That makes the slice feel waterfall.
+
+- **First meaningful goal = a docs→graph→diagram demo**, not feature-complete Phase 1. Add a thin
+  **diagram exporter** that renders the Domain Map (or graph) as **PlantUML** (the chosen format;
+  Mermaid optional) and a **one-command demo CLI** running connector→extraction→loader→projection
+  →diagram on a small Payments doc set. The exporter is just another *projection consumer*,
+  consistent with spec 007.
+- **OCP validation is deferred until after that demo.** The second connector (JSON, issue #10)
+  and second loader (vector stub, issue #11) still ship — the OCP principle is non-negotiable —
+  but they prove extensibility, not demo value, so they move *behind* the exporter/CLI.
+- **Build order:** #5 ✅ → #6 ✅ → #7 ✅ → minimal **#8** (query: lookup + neighbourhood only) →
+  **#9** (Domain Map) → **diagram exporter + demo CLI** → then **#10**, **#11**.
+- A throwaway spike (2026-06-15) already proved the path: real `GraphLoader` → in-memory graph →
+  `demo/domain-map.puml` (+ rendered `.png`). The real exporter generalises it.
+
+This is a revisable reprioritisation, not a scope change — every Phase 1 feature still lands.
+
 ## OCP validation targets for Phase 1
+
+> **Sequencing (D-P1.6):** these two targets are **deferred until after** the first
+> docs→graph→PlantUML demo (minimal #8 → #9 → exporter + demo CLI). They remain required.
+
 - **Second connector**: JSON ingestion adapter — added without modifying the core pipeline.
 - **Second loader**: in-memory vector-store stub — added without modifying extraction or the graph loader.

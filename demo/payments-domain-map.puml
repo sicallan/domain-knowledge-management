@@ -1,0 +1,58 @@
+@startuml payments-domain-map
+title Payments — Domain Map (L1) · auto-generated from source documents
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam packageStyle frame
+legend right
+  Each frame = a source document (bounded-context proxy).
+  <b>Decisions</b> (gold hexagons) are the highest-value nodes —
+  where regulation and business logic concentrate.
+endlegend
+
+package "authorisation.md" {
+  rectangle "Authorisation within available balance\nauthorisedAmount <= cardholder.availableBalance" as n_inv_auth_balance <<BusinessInvariant>> #CE93D8
+  hexagon "Authorise Payment\n«automated»  Approved / Declined" as n_d_authorise <<Decision>> #FFD54F
+  rectangle "Authorisation\n«aggregate»" as n_e_authorisation <<DomainConcept>> #90CAF9
+  rectangle "Cardholder\n«entity»" as n_e_cardholder <<DomainConcept>> #90CAF9
+  rectangle "Card not expired\ncard.expiry > authorisedAt" as n_rule_card_expiry <<Rule>> #A5D6A7
+}
+
+package "fraud-scoring.md" {
+  folder "Fraud Management" as n_cap_fraud_mgmt <<BusinessCapability>> #80CBC4
+  hexagon "Score Transaction Risk\n«automated»  Approve / Challenge / Decline" as n_d_score_risk <<Decision>> #FFD54F
+  card "Fraud Blocklist\nowner: Fraud Operations" as n_ref_fraud_blocklist <<ReferenceData>> #FFAB91
+  card "Risk Score Table\nowner: Risk Modelling" as n_ref_risk_score <<ReferenceData>> #FFAB91
+}
+
+package "refunds.md" {
+  rectangle "Refund within original payment\nrefund.amount <= originalPayment.amount" as n_inv_refund_amount <<BusinessInvariant>> #CE93D8
+  hexagon "Approve Refund\n«hybrid»  Auto-approved / Manual review" as n_d_approve_refund <<Decision>> #FFD54F
+  rectangle "Refund\n«aggregate»" as n_e_refund <<DomainConcept>> #90CAF9
+  rectangle "Refund within 180 days\nnow <= originalSettlementDate + 180d" as n_rule_refund_window <<Rule>> #A5D6A7
+}
+
+package "settlement.md" {
+  rectangle "Batch total equals captured sum\nbatch.total == sum(capturedTransactions)" as n_inv_settlement_total <<BusinessInvariant>> #CE93D8
+  hexagon "Net Settlement\n«automated»  Net position computed" as n_d_net_settlement <<Decision>> #FFD54F
+  rectangle "Settlement\n«aggregate»" as n_e_settlement <<DomainConcept>> #90CAF9
+  rectangle "Settlement Batch\n«entity»" as n_e_settlement_batch <<DomainConcept>> #90CAF9
+  card "Scheme Fee Table\nowner: Scheme Relations" as n_ref_scheme_fee <<ReferenceData>> #FFAB91
+}
+
+n_cap_fraud_mgmt --> n_d_score_risk : governs
+n_e_authorisation --> n_e_cardholder : involves
+n_e_refund --> n_e_settlement : derivedFrom
+n_e_settlement --> n_e_settlement_batch : contains
+n_e_settlement_batch --> n_inv_settlement_total : constrainedBy
+n_d_approve_refund -[#F57F17,bold]-> n_e_refund : operatesOn
+n_d_approve_refund -[#F57F17,bold]-> n_rule_refund_window : evaluates
+n_d_approve_refund -[#F57F17,bold]-> n_inv_refund_amount : constrainedBy
+n_d_authorise -[#F57F17,bold]-> n_e_authorisation : operatesOn
+n_d_authorise -[#F57F17,bold]-> n_rule_card_expiry : evaluates
+n_d_authorise -[#F57F17,bold]-> n_inv_auth_balance : constrainedBy
+n_d_authorise -[#F57F17,bold]-> n_d_score_risk : triggers
+n_d_net_settlement -[#F57F17,bold]-> n_e_settlement : operatesOn
+n_d_net_settlement -[#F57F17,bold]-> n_ref_scheme_fee : consumes
+n_d_score_risk -[#F57F17,bold]-> n_ref_risk_score : consumes
+n_d_score_risk -[#F57F17,bold]-> n_ref_fraud_blocklist : consumes
+@enduml

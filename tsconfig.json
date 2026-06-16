@@ -19,5 +19,5 @@
       "@dkm/source-connectors/*": ["modules/source-connectors/src/*"]
     }
   },
-  "include": ["modules/*/src/**/*.ts", "modules/*/test/**/*.ts", "*.config.ts"]
+  "include": ["modules/*/src/**/*.ts", "modules/*/test/**/*.ts", "demo/src/**/*.ts", "*.config.ts"]
 }

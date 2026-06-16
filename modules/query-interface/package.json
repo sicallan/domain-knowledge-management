@@ -1,0 +1,16 @@
+{
+  "name": "@dkm/query",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Query Interface (spec 006): the consumer-facing read API over the graph. Phase 1 graph-served subset — entity lookup, type listing (cursor pagination), traversal, path finding — plus a query router with typed Phase-1-unavailable branches, a pass-through access-filter seam, and metrics emission.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@dkm/schema": "workspace:*",
+    "@dkm/knowledge-graph": "workspace:*",
+    "@dkm/loaders": "workspace:*"
+  }
+}

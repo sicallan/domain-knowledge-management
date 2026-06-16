@@ -57,6 +57,18 @@ importers:
         specifier: workspace:*
         version: link:../schema
 
+  modules/query-interface:
+    dependencies:
+      '@dkm/knowledge-graph':
+        specifier: workspace:*
+        version: link:../knowledge-graph
+      '@dkm/loaders':
+        specifier: workspace:*
+        version: link:../loaders
+      '@dkm/schema':
+        specifier: workspace:*
+        version: link:../schema
+
   modules/schema:
     dependencies:
       ajv:

@@ -1,0 +1,68 @@
+{
+  "subdomains": [
+    {
+      "id": "sd-payments",
+      "name": "Payments",
+      "contexts": [
+        {
+          "id": "bc-authorisation",
+          "name": "Authorisation",
+          "conceptCount": 2,
+          "serviceCount": 0,
+          "relationships": [
+            {
+              "targetContextId": "bc-fraud",
+              "type": "triggers"
+            }
+          ]
+        },
+        {
+          "id": "bc-refunds",
+          "name": "Refunds",
+          "conceptCount": 1,
+          "serviceCount": 0,
+          "relationships": [
+            {
+              "targetContextId": "bc-settlement",
+              "type": "derivedFrom"
+            }
+          ]
+        },
+        {
+          "id": "bc-settlement",
+          "name": "Settlement",
+          "conceptCount": 2,
+          "serviceCount": 0,
+          "relationships": []
+        }
+      ]
+    },
+    {
+      "id": "sd-risk",
+      "name": "Risk & Fraud",
+      "contexts": [
+        {
+          "id": "bc-fraud",
+          "name": "Fraud Scoring",
+          "conceptCount": 0,
+          "serviceCount": 0,
+          "relationships": []
+        }
+      ]
+    }
+  ],
+  "crossContextRelationships": [
+    {
+      "source": "bc-authorisation",
+      "target": "bc-fraud",
+      "type": "triggers",
+      "strength": 1
+    },
+    {
+      "source": "bc-refunds",
+      "target": "bc-settlement",
+      "type": "derivedFrom",
+      "strength": 1
+    }
+  ]
+}

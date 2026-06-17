@@ -14,6 +14,7 @@ export { parseMarkdownSections, firstHeadingTitle } from "./markdown-section-par
 export { globToRegExp, matchGlob } from "./glob";
 export { DefaultConnectorRegistry } from "./registry";
 export { FilesystemConnector } from "./filesystem-connector";
+export { JsonConnector } from "./json-connector";
 export { registerConnectors, createConnectorRegistry } from "./register-connectors";
 // The contract suite imports vitest, so it is exposed via its own module path
 // (`@dkm/source-connectors/src/contract`) and intentionally not re-exported here.

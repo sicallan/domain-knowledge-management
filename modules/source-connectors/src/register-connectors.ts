@@ -1,4 +1,5 @@
 import { FilesystemConnector } from "./filesystem-connector";
+import { JsonConnector } from "./json-connector";
 import { DefaultConnectorRegistry } from "./registry";
 import type { ConnectorRegistry } from "./port";
 
@@ -9,7 +10,7 @@ import type { ConnectorRegistry } from "./port";
  */
 export function registerConnectors(registry: ConnectorRegistry): void {
   registry.register(new FilesystemConnector());
-  // Future: registry.register(new JsonConnector());  // Feature 06
+  registry.register(new JsonConnector()); // Feature 06 — second connector (OCP)
 }
 
 /** Convenience: a fresh registry with all built-in connectors registered. */

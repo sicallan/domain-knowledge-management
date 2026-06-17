@@ -1,0 +1,26 @@
+[
+  {
+    "id": "DEC-001",
+    "title": "Authorise card payments synchronously",
+    "status": "accepted",
+    "context": "Card authorisation must complete before settlement is initialised.",
+    "decision": "Perform synchronous authorisation against the issuer at capture time.",
+    "authority": "scheme"
+  },
+  {
+    "id": "DEC-002",
+    "title": "Tokenise stored credentials",
+    "status": "accepted",
+    "context": "Storing raw PANs widens the organisation's compliance scope.",
+    "decision": "Tokenise all stored credentials at capture time.",
+    "authority": "regulatory"
+  },
+  {
+    "id": "DEC-003",
+    "title": "Settle in batches overnight",
+    "status": "proposed",
+    "context": "Real-time settlement is costly for low-value card payments.",
+    "decision": "Batch settlement of authorised payments on an overnight cycle.",
+    "authority": "scheme"
+  }
+]

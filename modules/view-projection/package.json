@@ -1,0 +1,17 @@
+{
+  "name": "@dkm/view-projection",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "View Projection Engine (spec 007): the registry + projector port that materialises UI-ready views from the graph. Phase 1 ships the Domain Map projector (the first registered view), composing the @dkm/query primitives. New views register via the OCP extension point with no engine change.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@dkm/schema": "workspace:*",
+    "@dkm/knowledge-graph": "workspace:*",
+    "@dkm/loaders": "workspace:*",
+    "@dkm/query": "workspace:*"
+  }
+}

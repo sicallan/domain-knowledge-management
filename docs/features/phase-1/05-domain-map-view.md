@@ -49,6 +49,23 @@ Spec decisions applied: Decision 1 (hybrid per-view policy — Domain Map regist
 Decision 2 (code-based projectors via registration = the OCP point), Decision 3 (staleness metadata
 surfaced even though on-demand is always fresh).
 
+### Scope addition during build — real `Subdomain` + `BoundedContext` L1 schemas
+
+`DomainMapView` (spec 007) nests **subdomains → bounded contexts → concepts**, but the Phase 0a
+schema set had no `Subdomain` or `BoundedContext` inventory type — only six L1 leaf types — and the
+demo spike had proxied a bounded context by its source document. Rather than ship that proxy, the
+maintainer chose (2026-06-16) to model both tiers as **real, first-class, additive L1 inventory
+schemas** (`schemas/inventory/L1/subdomain.schema.json`, `bounded-context.schema.json`), linked by
+`belongsTo` edges (`BoundedContext` → `Subdomain`; `DomainConcept`/`Service` → `BoundedContext`),
+with `DomainConcept`/`BoundedContext`'s denormalised `subdomain`/`boundedContext` fields as a
+convenience fallback. This **extends** §2's literal in-scope list.
+
+*Rationale*: the headline visible artifact should reflect the real domain structure, not a
+source-document proxy; modelling it properly now avoids a retrofit later. *OCP*: the new types are
+**new schema files only** — the `SchemaRegistry` auto-discovers them and the relationship cardinality
+registry is unchanged (`belongsTo` is type-agnostic with cardinality "exactly one"), so nothing
+existing was modified.
+
 ## 5. User stories
 
 - *As an architect, I want a Domain Map of subdomains, bounded contexts, and their relationships, so

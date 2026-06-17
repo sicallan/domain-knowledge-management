@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/subdomain.schema.json",
+  "title": "Subdomain",
+  "description": "L1 — A Domain-Driven Design subdomain: a cohesive area of the business domain (core, supporting, or generic) that groups one or more bounded contexts.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name"],
+  "properties": {
+    "type": { "const": "Subdomain" },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" }
+  }
+}

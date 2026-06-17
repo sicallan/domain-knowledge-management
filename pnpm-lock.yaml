@@ -87,6 +87,21 @@ importers:
         specifier: workspace:*
         version: link:../schema
 
+  modules/view-projection:
+    dependencies:
+      '@dkm/knowledge-graph':
+        specifier: workspace:*
+        version: link:../knowledge-graph
+      '@dkm/loaders':
+        specifier: workspace:*
+        version: link:../loaders
+      '@dkm/query':
+        specifier: workspace:*
+        version: link:../query-interface
+      '@dkm/schema':
+        specifier: workspace:*
+        version: link:../schema
+
 packages:
 
   '@ampproject/remapping@2.3.0':

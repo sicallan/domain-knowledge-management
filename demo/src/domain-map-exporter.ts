@@ -1,23 +1,20 @@
 import type { GraphQueryService, QueryContext } from "@dkm/query";
+import type { DomainMapView } from "@dkm/view-projection";
 import type { InventoryEntry, RelationshipEntry } from "@dkm/schema";
 
 /**
- * Domain Map exporter (demo / Phase 1.6 spike). Reads the populated graph **through
- * the Query Interface** (`@dkm/query` — the same API that will feed the UI) and renders
- * a decisions-first DDD domain map as PlantUML. This is the seed of the real diagram
- * exporter that feature #9 (View Projection Engine, spec 007) will productionise as a
- * projection consumer.
+ * Domain Map PlantUML renderer (demo). A **demo-local consumer of the projected view**:
+ * feature #9's View Projection Engine produces the authoritative {@link DomainMapView}
+ * (subdomains → bounded contexts → counts + cross-context relationships); this module
+ * renders it as a decisions-first DDD domain map. The view drives the subdomain/context
+ * skeleton; the individual member nodes (decisions as gold hexagons, etc.) are fetched
+ * through the same Query Interface so the picture stays rich.
+ *
+ * This is intentionally **not** registered as a projector in the engine — the full
+ * Phase 1.6 diagram-exporter (a diagram projection target) is a separate later feature.
  */
 
-/** Inventory types rendered, in vertical section order (capability → data). */
-const RENDER_TYPES = [
-  "BusinessCapability",
-  "DomainConcept",
-  "Decision",
-  "Rule",
-  "BusinessInvariant",
-  "ReferenceData",
-] as const;
+const BELONGS_TO = "belongsTo";
 
 interface TypeStyle {
   shape: "rectangle" | "hexagon" | "card" | "folder";
@@ -56,12 +53,8 @@ function nodeName(node: InventoryEntry): string {
   return str(prop(node, "name")) ?? node.id;
 }
 
-function sourceOf(node: InventoryEntry): string {
-  return str(node.evidencedBy?.[0]?.source) ?? "unattributed";
-}
-
 /** Second label line: the most useful type-specific detail for this node. */
-function detail(node: InventoryEntry): string | undefined {
+function nodeDetail(node: InventoryEntry): string | undefined {
   if (node.type === "Decision") {
     const decisionType = str(prop(node, "decisionType"));
     const raw = prop(node, "outcomes");
@@ -89,85 +82,93 @@ function escapeLabel(text: string): string {
   return text.replace(/"/g, "'");
 }
 
-export interface DomainMapModel {
-  /** Nodes grouped by their source document (bounded-context proxy). */
-  nodesByDoc: Map<string, InventoryEntry[]>;
+/** The decisions-first detail behind the view: member nodes per context, plus edges. */
+export interface ContextDetail {
+  /** Member inventory nodes keyed by bounded-context id (from the projected view). */
+  membersByContext: Map<string, InventoryEntry[]>;
+  /** Domain relationships between members (belongsTo structural edges excluded). */
   edges: RelationshipEntry[];
   decisionIds: Set<string>;
-  nodeCount: number;
 }
 
 /**
- * Assemble the decisions-first model by querying the graph **through the Query
- * Interface**: `listEntries` per type for the nodes, then a one-hop `traverse` out of
- * every node to collect (and de-duplicate) the relationships.
+ * Fetch the member nodes for each context **in the projected view** through the Query
+ * Interface: `traverse` belongsTo into the context for its members, then one hop out of
+ * each member to collect the domain relationships. The view supplies the authoritative
+ * set of contexts; this fills in the node-level detail the aggregate view omits.
  */
-export async function buildDomainMapModel(service: GraphQueryService): Promise<DomainMapModel> {
-  const nodes = new Map<string, InventoryEntry>();
-  for (const type of RENDER_TYPES) {
-    const page = await service.listEntries({ type, limit: 100 }, CONTEXT);
-    for (const node of page.items) nodes.set(node.id, node);
-  }
-
+export async function collectContextDetail(
+  service: GraphQueryService,
+  view: DomainMapView,
+): Promise<ContextDetail> {
+  const membersByContext = new Map<string, InventoryEntry[]>();
   const edges = new Map<string, RelationshipEntry>();
-  for (const node of nodes.values()) {
-    const subgraph = await service.traverse(
-      { startNodeId: node.id, direction: "out", maxDepth: 1, includeEdges: true },
-      CONTEXT,
-    );
-    for (const edge of subgraph.edges) edges.set(edge.id, edge);
+  const decisionIds = new Set<string>();
+
+  for (const subdomain of view.subdomains) {
+    for (const context of subdomain.contexts) {
+      const subgraph = await service.traverse(
+        { startNodeId: context.id, direction: "in", edgeTypes: [BELONGS_TO], maxDepth: 1, includeEdges: false },
+        CONTEXT,
+      );
+      const members = subgraph.nodes.filter((node) => node.id !== context.id);
+      membersByContext.set(context.id, members);
+      for (const member of members) {
+        if (member.type === "Decision") decisionIds.add(member.id);
+        const out = await service.traverse(
+          { startNodeId: member.id, direction: "out", maxDepth: 1, includeEdges: true },
+          CONTEXT,
+        );
+        for (const edge of out.edges) {
+          if (edge.relationshipType !== BELONGS_TO) edges.set(edge.id, edge);
+        }
+      }
+    }
   }
 
-  const nodesByDoc = new Map<string, InventoryEntry[]>();
-  for (const node of nodes.values()) {
-    const doc = sourceOf(node);
-    const list = nodesByDoc.get(doc) ?? [];
-    list.push(node);
-    nodesByDoc.set(doc, list);
-  }
-
-  const decisionIds = new Set(
-    [...nodes.values()].filter((node) => node.type === "Decision").map((node) => node.id),
-  );
-
-  return { nodesByDoc, edges: [...edges.values()], decisionIds, nodeCount: nodes.size };
+  return { membersByContext, edges: [...edges.values()], decisionIds };
 }
 
-/** Render the model as a PlantUML DDD domain map, decisions highlighted. */
-export function renderPlantUml(model: DomainMapModel): string {
+/** Render the projected Domain Map as PlantUML: subdomains → contexts → members. */
+export function renderDomainMap(view: DomainMapView, detail: ContextDetail): string {
   const lines: string[] = [
     "@startuml payments-domain-map",
-    "title Payments — Domain Map (L1) · auto-generated from source documents",
+    "title Payments — Domain Map (L1) · projected by the View Projection Engine (spec 007)",
     "skinparam shadowing false",
     "skinparam defaultFontName Helvetica",
     "skinparam packageStyle frame",
     "legend right",
-    "  Each frame = a source document (bounded-context proxy).",
+    "  Outer frame = subdomain · inner frame = bounded context (with concept/service counts).",
     "  <b>Decisions</b> (gold hexagons) are the highest-value nodes —",
     "  where regulation and business logic concentrate.",
+    "  Bold amber arrows are decision-sourced relationships.",
     "endlegend",
     "",
   ];
 
-  for (const doc of [...model.nodesByDoc.keys()].sort()) {
-    lines.push(`package "${doc}" {`);
-    const items = [...(model.nodesByDoc.get(doc) ?? [])].sort(
-      (a, b) => a.type.localeCompare(b.type) || nodeName(a).localeCompare(nodeName(b)),
-    );
-    for (const node of items) {
-      const style = TYPE_STYLE[node.type] ?? FALLBACK_STYLE;
-      const extra = detail(node);
-      const label = escapeLabel(extra ? `${nodeName(node)}\\n${extra}` : nodeName(node));
-      lines.push(`  ${style.shape} "${label}" as ${alias(node.id)} <<${style.stereotype}>> ${style.colour}`);
+  for (const subdomain of view.subdomains) {
+    lines.push(`package "${escapeLabel(subdomain.name)}  «subdomain»" as ${alias(subdomain.id)} {`);
+    for (const context of subdomain.contexts) {
+      const counts = `${context.conceptCount} concepts · ${context.serviceCount} services`;
+      lines.push(`  package "${escapeLabel(context.name)}\\n${counts}" as ${alias(context.id)} {`);
+      const members = [...(detail.membersByContext.get(context.id) ?? [])].sort(
+        (a, b) => a.type.localeCompare(b.type) || nodeName(a).localeCompare(nodeName(b)),
+      );
+      for (const node of members) {
+        const style = TYPE_STYLE[node.type] ?? FALLBACK_STYLE;
+        const extra = nodeDetail(node);
+        const label = escapeLabel(extra ? `${nodeName(node)}\\n${extra}` : nodeName(node));
+        lines.push(`    ${style.shape} "${label}" as ${alias(node.id)} <<${style.stereotype}>> ${style.colour}`);
+      }
+      lines.push("  }");
     }
     lines.push("}");
     lines.push("");
   }
 
-  // Relationships — decision-sourced edges emphasised (bold amber) to keep the
-  // decisions central to the reading of the map.
-  for (const edge of model.edges) {
-    const arrow = model.decisionIds.has(edge.sourceId) ? "-[#F57F17,bold]->" : "-->";
+  // Relationships between members — decision-sourced edges emphasised (bold amber).
+  for (const edge of detail.edges) {
+    const arrow = detail.decisionIds.has(edge.sourceId) ? "-[#F57F17,bold]->" : "-->";
     lines.push(`${alias(edge.sourceId)} ${arrow} ${alias(edge.targetId)} : ${edge.relationshipType}`);
   }
 

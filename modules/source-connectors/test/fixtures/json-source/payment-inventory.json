@@ -1,0 +1,9 @@
+{
+  "boundedContext": "Authorisation",
+  "aggregates": ["PaymentAuthorisation", "RiskAssessment"],
+  "policies": {
+    "retryLimit": 3,
+    "synchronous": true
+  },
+  "owner": "payments-platform"
+}

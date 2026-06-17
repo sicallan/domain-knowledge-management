@@ -13,6 +13,8 @@
       "@dkm/loaders/*": ["modules/loaders/src/*"],
       "@dkm/query": ["modules/query-interface/src/index.ts"],
       "@dkm/query/*": ["modules/query-interface/src/*"],
+      "@dkm/view-projection": ["modules/view-projection/src/index.ts"],
+      "@dkm/view-projection/*": ["modules/view-projection/src/*"],
       "@dkm/quality": ["modules/quality-verification/src/index.ts"],
       "@dkm/quality/*": ["modules/quality-verification/src/*"],
       "@dkm/source-connectors": ["modules/source-connectors/src/index.ts"],

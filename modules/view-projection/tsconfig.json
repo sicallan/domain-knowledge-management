@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "baseUrl": "../..",
+    "paths": {
+      "@dkm/schema": ["modules/schema/src/index.ts"],
+      "@dkm/knowledge-graph": ["modules/knowledge-graph/src/index.ts"],
+      "@dkm/loaders": ["modules/loaders/src/index.ts"],
+      "@dkm/query": ["modules/query-interface/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

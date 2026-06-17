@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/bounded-context.schema.json",
+  "title": "BoundedContext",
+  "description": "L1 — A Domain-Driven Design bounded context: an explicit boundary within which a domain model is defined and applicable. Belongs to a subdomain and contains domain concepts and their realisations.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name"],
+  "properties": {
+    "type": { "const": "BoundedContext" },
+    "name": { "type": "string", "minLength": 1 },
+    "subdomain": {
+      "type": "string",
+      "description": "Denormalised id (or name) of the owning Subdomain. The authoritative link is a belongsTo edge; this field is a convenience for views and consumers."
+    },
+    "description": { "type": "string" }
+  }
+}

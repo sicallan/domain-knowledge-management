@@ -16,6 +16,8 @@ and the feature doc [docs/features/phase-1/03-graph-loader.md](../../docs/featur
 - `src/graph-loader.ts` — `GraphLoader`: writes through the spec-002 `GraphPort`.
 - `src/orchestrator.ts` — `MultiLoaderOrchestrator`: register loaders; run a run's two files.
 - `src/in-memory-stub.ts` — a reference `LoaderPort` for contract testing.
+- `src/vector-loader.ts` — `VectorLoader`: the **second** loader (Feature 07), embeds entities
+  into an `InMemoryVectorIndex` via an `Embedder` seam (`src/embedder.ts`, `src/vector-index.ts`).
 
 ## GraphLoader behaviour
 
@@ -30,6 +32,34 @@ and the feature doc [docs/features/phase-1/03-graph-loader.md](../../docs/featur
   the JSONL fixed core, and the graph port.
 
 The loader consumes the Python pipeline's JSONL **purely via files** — no in-process coupling.
+
+## VectorLoader behaviour (Feature 07 — the loader OCP proof)
+
+`VectorLoader` is the **second** `LoaderPort`. It reads the **same** `{runId}-extractions.jsonl`
+the graph loader does and embeds each entity into an in-memory vector index — "extract once,
+load many" — added with **zero edits** to extraction, the graph loader, the port, or the
+orchestrator (it joins a run via `orchestrator.registerLoader(...)` only).
+
+- **Embeds entities**: text from `data` (name/description, else JSON) → vector via the
+  `Embedder` seam → upsert `{ entryId, embedding, payload }` keyed by `entryId`.
+- **Ignores relationships** (`orderedProcessing: false`): a `type: "Relationship"` entry is
+  skipped without error (spec 003 D2 — vector loaders ignore the relationship file).
+- **Idempotent / rollback**: re-running a `runId` skips (never re-embeds); `rollbackRun(runId)`
+  removes that run's vectors. `requiredFields: ["data"]` — a missing `data` is a non-retriable
+  failure surfaced by the orchestrator.
+- **Embedder**: there is **no in-process TypeScript LLM gateway** (Feature 02's gateway is
+  Python, cross-process), so the default is a deterministic **`FakeEmbedder`** (stable
+  hash-based vectors, fixed dimension) — no API key, no network, CI-green. A real embedder is
+  **deferred** behind the same seam (Phase 3+).
+
+### Vector DB — deferred (ADR-0002)
+
+This is deliberately a **stub**: it proves the port suffices for a vector target while the
+product choice (pgvector / Qdrant / …) stays **deferred** behind `targetStore:
+"in-memory-vector"`. The requirements it places on a real store — embedding dimension, upsert
+by id, idempotency keyed by `(entryId, runId)`, run-scoped delete, payload filtering — are
+captured in [ADR-0002](../../docs/adr/0002-vector-store-selection-deferred.md). The index is
+**write-only** this phase; the semantic-search query path is Phase 3+ (Feature 04).
 
 ## Running the Neo4j-backed integration test locally (opt-in)
 

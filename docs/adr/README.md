@@ -10,3 +10,4 @@ Format: `NNNN-short-title.md`. Status one of: *Proposed*, *Accepted*, *Accepted 
 | ADR | Title | Status |
 |-----|-------|--------|
 | [0001](./0001-intermediate-jsonl-vs-okf-interchange.md) | Intermediate format (typed JSONL) vs OKF interchange | Accepted (direction) |
+| [0002](./0002-vector-store-selection-deferred.md) | Vector store selection (deferred behind the loader port) | Proposed (deferred) |

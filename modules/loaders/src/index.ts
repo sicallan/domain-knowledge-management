@@ -6,4 +6,5 @@ export { entryToNode, entryToEdge, isRelationship, MappingError, RELATIONSHIP_TY
 export { GraphLoader } from "./graph-loader";
 export type { GraphLoaderOptions } from "./graph-loader";
 export { MultiLoaderOrchestrator } from "./orchestrator";
+export * from "./vector-loader"; // Feature 07 — second loader (vector); the only edit to a shared file.
 // The contract suite imports vitest; consume it via `@dkm/loaders/src/contract`.

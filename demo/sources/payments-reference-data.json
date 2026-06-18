@@ -1,0 +1,38 @@
+[
+  {
+    "code": "scheme-fee-table",
+    "name": "Scheme Fee Table",
+    "owner": "Scheme Relations",
+    "kind": "rate-card",
+    "effectiveFrom": "2026-01-01",
+    "entries": [
+      { "scheme": "visa", "region": "UK", "interchangeBps": 30, "schemeFeeBps": 11 },
+      { "scheme": "mastercard", "region": "UK", "interchangeBps": 30, "schemeFeeBps": 12 },
+      { "scheme": "visa", "region": "EEA", "interchangeBps": 20, "schemeFeeBps": 10 }
+    ]
+  },
+  {
+    "code": "risk-score-bands",
+    "name": "Risk Score Table",
+    "owner": "Risk Modelling",
+    "kind": "lookup",
+    "effectiveFrom": "2026-03-01",
+    "entries": [
+      { "band": "low", "min": 0, "max": 39, "action": "auto-approve" },
+      { "band": "review", "min": 40, "max": 74, "action": "step-up-authentication" },
+      { "band": "high", "min": 75, "max": 100, "action": "decline" }
+    ]
+  },
+  {
+    "code": "settlement-currencies",
+    "name": "Settlement Currencies",
+    "owner": "Treasury",
+    "kind": "code-list",
+    "effectiveFrom": "2026-01-01",
+    "entries": [
+      { "iso4217": "GBP", "minorUnits": 2, "settlementCalendar": "LON" },
+      { "iso4217": "EUR", "minorUnits": 2, "settlementCalendar": "TARGET2" },
+      { "iso4217": "USD", "minorUnits": 2, "settlementCalendar": "NYC" }
+    ]
+  }
+]

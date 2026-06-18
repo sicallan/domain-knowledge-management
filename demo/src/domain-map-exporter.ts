@@ -129,6 +129,31 @@ export async function collectContextDetail(
   return { membersByContext, edges: [...edges.values()], decisionIds };
 }
 
+/**
+ * Render the projected {@link DomainMapView} as an indented, human-readable tree for
+ * the console — the same UI-ready structure (subdomains → bounded contexts → counts,
+ * plus cross-context relationships) the product UI will consume, shown as text so a
+ * stakeholder can see the data behind the diagram, not just the picture.
+ */
+export function formatDomainMapTree(view: DomainMapView): string {
+  const lines: string[] = [];
+  for (const subdomain of view.subdomains) {
+    lines.push(`  ${subdomain.name}  «subdomain»`);
+    for (const context of subdomain.contexts) {
+      lines.push(
+        `    └─ ${context.name}  (${context.conceptCount} concepts · ${context.serviceCount} services)`,
+      );
+    }
+  }
+  if (view.crossContextRelationships.length > 0) {
+    lines.push(`  cross-context relationships (${view.crossContextRelationships.length}):`);
+    for (const rel of view.crossContextRelationships) {
+      lines.push(`    ${rel.source} ──${rel.type}(×${rel.strength})──▶ ${rel.target}`);
+    }
+  }
+  return lines.join("\n");
+}
+
 /** Render the projected Domain Map as PlantUML: subdomains → contexts → members. */
 export function renderDomainMap(view: DomainMapView, detail: ContextDetail): string {
   const lines: string[] = [

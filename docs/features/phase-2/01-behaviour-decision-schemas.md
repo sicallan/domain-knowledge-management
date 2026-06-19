@@ -28,18 +28,38 @@ sequenced first.
 > `/schemas/inventory/L1/decision.schema.json`). Decision is modelled here because behaviour and
 > decisions are extracted together (2.2/2.3) and because Decision is the phase's centrepiece.
 
+> **Already shipped in Phase 0 (PR #15) — reuse, do NOT re-author.** The foundation build already
+> delivered, tested and green:
+> - `schemas/inventory/L1/decision.schema.json` — the canonical `Decision` shape. **Note its
+>   established design choices (keep them):** the automated/manual/hybrid axis is the field
+>   **`decisionType`** (the base-entry discriminator is `type: { const: "Decision" }`); and
+>   **rules / referenceData / invariants are modelled as decision-specific *relationships*, not
+>   entry fields**. (An earlier draft of §7 listed them as fields and called the axis `type` — that
+>   was inaccurate; this doc is corrected to the shipped schema.)
+> - The cardinality framework `RelationshipTypeRegistry` (`modules/schema/src/relationships.ts`),
+>   which **already enforces `evaluates ≥ 1`** for a Decision (and `belongsTo` N:1, 1:N, and OCP
+>   registration of new relationship types) — `modules/schema/test/cardinality.test.ts`.
+> - Filesystem auto-discovery across `L0–L3` + `relationships` (`SchemaRegistry`), so new schema
+>   files are picked up with no registry edit.
+>
+> This feature therefore **adds the missing behaviour layer**; it does not recreate Decision or the
+> cardinality engine.
+
 **In scope**
-- Five inventory schemas (Draft 2020-12), each `$ref`-composing `common/base-entry.schema.json`
-  (spec 001 §Base Entry): `decision` (L1), `orchestration-flow`, `orchestration-step`, `event`,
-  `state-transition` (L3).
+- **Four new L3 behaviour schemas** (Draft 2020-12), each `$ref`-composing
+  `common/base-entry.schema.json` (spec 001 §Base Entry): `orchestration-flow`, `orchestration-step`,
+  `event`, `state-transition`. (The L1 `decision` schema **already exists** from Phase 0 — reused as
+  canonical, **not** re-authored.)
 - Two relationship schemas under `/schemas/relationships/`: `behavioural.schema.json`
   (`triggers`, `emits`, `consumes`, `transitionsTo`, `compensates`, `invokes`) and
   `decision-specific.schema.json` (`evaluates`, `consumes`, `constrainedBy`, `triggeredBy`,
   `produces`, `realizedBy`) — extending the existing `relationship.schema.json` base.
-- **Cardinality + conditional constraints** from [plan.md §Relationship Cardinality](../../../plan.md):
-  notably `evaluates` ≥ 1 (a Decision must reference ≥ 1 Rule **or** BusinessInvariant), `produces`
-  ≥ 1 (every Decision has ≥ 1 outcome), and the conditional *"if `decision.type` is `automated`,
-  then a `triggeredBy` edge is required"* (spec 001 Open Q1).
+- **The remaining cardinality + conditional constraints** from
+  [plan.md §Relationship Cardinality](../../../plan.md). `evaluates ≥ 1` (a Decision must reference
+  ≥ 1 Rule **or** BusinessInvariant) is **already implemented** in `RelationshipTypeRegistry`
+  (Phase 0); this feature **adds** `produces ≥ 1` (every Decision has ≥ 1 outcome edge) and the
+  conditional *"if `decisionType` is `automated`, then a `triggeredBy` edge is required"*
+  (spec 001 Open Q1) — extending the same registry, not a new mechanism.
 - Generated TypeScript types (schema-first — spec 001 Decision 2) and Python `jsonschema` parity in CI.
 - Additive registration: schemas are **auto-discovered from the filesystem** (spec 001 Decision 4);
   no manifest edit.
@@ -115,10 +135,10 @@ sequenced first.
    constraint: "A Decision must reference at least one evaluable element").
 8. **Decision cardinality — `produces` ≥ 1** — *Given* a Decision with no `produces` edge, *when*
    checked, *then* rejected ("every decision must have at least one outcome").
-9. **Conditional trigger for automated decisions** — *Given* `decision.type = "automated"` with no
-   `triggeredBy` edge, *when* checked, *then* rejected; *given* `type = "manual"` with none, *then*
-   accepted (spec 001 Open Q1 resolved as: enforce as a graph-level cardinality/quality rule, not
-   pure structural JSON Schema — see §11).
+9. **Conditional trigger for automated decisions** — *Given* `decisionType = "automated"` with no
+   `triggeredBy` edge, *when* checked, *then* rejected; *given* `decisionType = "manual"` with none,
+   *then* accepted (spec 001 Open Q1 resolved as: enforce as a graph-level cardinality/quality rule,
+   not pure structural JSON Schema — see §11).
 10. **Additive-only** — *Given* the previously-shipped L1 structural schemas, *when* this feature
     lands, *then* none of them is modified (diff touches only new files) — proving additive evolution.
 
@@ -137,10 +157,9 @@ interface SchemaValidator {
 }
 ```
 
-New schema files (paths fixed by spec 001 §Schema Organisation):
+New schema files this feature adds (paths fixed by spec 001 §Schema Organisation):
 
 ```
-schemas/inventory/L1/decision.schema.json
 schemas/inventory/L3/orchestration-flow.schema.json
 schemas/inventory/L3/orchestration-step.schema.json
 schemas/inventory/L3/event.schema.json
@@ -149,14 +168,16 @@ schemas/relationships/behavioural.schema.json
 schemas/relationships/decision-specific.schema.json
 ```
 
+Already present (Phase 0, **reused unchanged**): `schemas/inventory/L1/decision.schema.json`.
+
 Field sets (from [plan.md §Inventory Catalogue](../../../plan.md), atop base-entry):
 
 | Type | Type-specific fields |
 |---|---|
-| `Decision` (L1) | `name`, `type` (`automated`/`manual`/`hybrid`), `inputs[]`, `rules[]` (→Rule ids), `referenceData[]`, `invariants[]`, `outcomes[]`, `owner`, `frequency`, `latencyBudget` |
+| `Decision` (L1) — **already shipped** | `name`, `decisionType` (`automated`/`manual`/`hybrid`), `inputs[]`, `outcomes[]`, `owner`, `frequency`, `latencyBudget`. Its links to **rules / referenceData / invariants are decision-specific relationships, not fields** (see the description in the shipped schema). Do not modify. |
 | `OrchestrationFlow` (L3) | `name`, `trigger`, `steps[]` (→OrchestrationStep ids), `owningService` |
 | `OrchestrationStep` (L3) | `sequence`, `actionType`, `serviceOrComponent`, `input`, `output` |
-| `Event` (L3) | `name`, `type` (`domain`/`integration`), `emitter`, `consumers[]`, `transport` |
+| `Event` (L3) | `name`, `eventType` (`domain`/`integration`) — named `eventType` to avoid colliding with the base-entry `type` discriminator, matching the shipped `decisionType` convention — `emitter`, `consumers[]`, `transport` |
 | `StateTransition` (L3) | `entity`, `fromState`, `toState`, `trigger`, `guardCondition` |
 
 Relationship endpoint + cardinality table — implement exactly as
@@ -166,15 +187,17 @@ Relationship endpoint + cardinality table — implement exactly as
 
 ## 8. TDD test plan (write these first)
 
-- **Unit — `decision.schema.test.ts`**: valid/invalid Decision fixtures; each required field; enum
-  bounds on `type`; base-entry inheritance.
+- **Decision schema** is already covered by the existing `modules/schema/test/validation.test.ts`
+  (valid fixture + rejects a Decision missing `outcomes`) — **no new Decision-schema test needed**;
+  do not duplicate or modify it. Add Decision *fixtures only* if a new edge-cardinality test needs them.
 - **Unit — `behaviour-schemas.test.ts`**: one valid + ≥2 invalid fixtures per L3 type
   (flow/step/event/state-transition); `Event.type` enum; `StateTransition` from≠to.
 - **Unit — `behavioural-relationships.test.ts`** + **`decision-relationships.test.ts`**: each
   relationship kind validates only for its allowed `{sourceType,targetType}`; bad endpoints fail.
-- **Unit — `decision-cardinality.test.ts`**: `evaluates ≥ 1`, `produces ≥ 1`, and the
-  `type=automated ⇒ triggeredBy required` conditional (criteria 7–9). Asserts these live in the
-  cardinality/quality layer, not structural JSON Schema.
+- **Unit — extend `modules/schema/test/cardinality.test.ts`**: `evaluates ≥ 1` is **already
+  tested** (Phase 0) — add the **new** `produces ≥ 1` and the `decisionType=automated ⇒ triggeredBy
+  required` conditional (criteria 8–9). These live in the cardinality/quality layer, not structural
+  JSON Schema.
 - **Contract — `cross-validator-parity.test.ts`** (CI, both ecosystems): the unified fixture set
   yields identical verdicts under Ajv and `jsonschema`.
 - **Contract — `registry-autodiscovery.test.ts`**: dropping the files makes `hasType`/`listTypes`
@@ -182,14 +205,16 @@ Relationship endpoint + cardinality table — implement exactly as
 
 ## 9. Task breakdown
 
-1. [ ] Author `decision.schema.json` (L1) `$ref`-composing base-entry; fixtures (valid + invalid).
+1. [x] ~~Author `decision.schema.json` (L1)~~ — **already shipped in Phase 0 (#15); reuse unchanged.**
 2. [ ] Author the four L3 behaviour schemas + fixtures.
 3. [ ] Author `behavioural.schema.json` + `decision-specific.schema.json` extending the relationship
    base; encode allowed endpoint type pairs.
-4. [ ] Encode the cardinality + conditional constraints in the cardinality/quality layer (criteria 7–9).
-5. [ ] Wire all fixtures into the Ajv + `jsonschema` parity harness.
-6. [ ] Regenerate TypeScript types from the new schemas (schema-first pipeline).
-7. [ ] Add registry auto-discovery test proving no manifest/registry edit was needed.
+4. [ ] Extend the cardinality/quality layer (`RelationshipTypeRegistry`) with the **new** `produces ≥ 1`
+   and `decisionType=automated ⇒ triggeredBy` rules (criteria 8–9); `evaluates ≥ 1` (criterion 7) is
+   already implemented — leave it.
+5. [ ] Wire all new fixtures into the Ajv + `jsonschema` parity harness.
+6. [ ] Regenerate TypeScript types from the new L3 + relationship schemas (schema-first pipeline).
+7. [ ] Add a registry auto-discovery test proving the new L3 files need no manifest/registry edit.
 8. [ ] Update `schemas/` index / docs to list the new types and versions.
 
 ## 10. OCP extension points

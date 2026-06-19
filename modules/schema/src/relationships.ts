@@ -32,6 +32,19 @@ const DEFAULT_DEFS: RelationshipTypeDef[] = [
 ];
 
 /**
+ * Behavioural edge types (plan.md §Behavioural). Phase 2.1 adds these additively — they are
+ * NOT baked into DEFAULT_DEFS. Register them onto a registry via `register()` (or the
+ * `registerBehaviouralRelationships` helper) to prove OCP extension without touching the
+ * shipped defaults. None carries a minimum: behavioural edges are optional structure.
+ */
+export const BEHAVIOURAL_RELATIONSHIP_DEFS: RelationshipTypeDef[] = [
+  { name: "triggers", sourceTypes: ["Event", "Command"], targetTypes: ["OrchestrationFlow"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Event/Command → OrchestrationFlow" },
+  { name: "transitionsTo", sourceTypes: ["OrchestrationStep"], targetTypes: ["StateTransition"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "OrchestrationStep → StateTransition" },
+  { name: "compensates", sourceTypes: ["OrchestrationStep"], targetTypes: ["OrchestrationStep"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "OrchestrationStep → OrchestrationStep" },
+  { name: "invokes", sourceTypes: ["OrchestrationStep"], targetTypes: ["Decision"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "OrchestrationStep → Decision" },
+];
+
+/**
  * RelationshipTypeRegistry — declares cardinality constraints per relationship type.
  * New edge types register via `register()` without modifying existing logic (OCP).
  * Unknown relationship types carry no cardinality constraint (valid by default).
@@ -95,6 +108,33 @@ export class RelationshipTypeRegistry {
       );
     }
     return ok();
+  }
+
+  /**
+   * Conditional cross-field rule (plan.md §Relationship Cardinality; spec 001 Open Q1):
+   * an `automated` Decision must have at least one `triggeredBy` edge. This depends on a
+   * field of the Decision (`decisionType`) AND the count of incident edges, so it is a
+   * graph-level cardinality/quality rule — it cannot be expressed in a single-entry JSON
+   * Schema. `manual` and `hybrid` decisions carry no such requirement.
+   */
+  checkAutomatedDecisionTrigger(decisionType: string, triggeredByCount: number): ValidationResult {
+    if (decisionType === "automated" && triggeredByCount < 1) {
+      return fail(
+        "Cardinality violation: an automated Decision requires at least one 'triggeredBy' edge",
+        "conditionalCardinality",
+      );
+    }
+    return ok();
+  }
+}
+
+/**
+ * Register the behavioural edge types (plan.md §Behavioural) onto a registry. Pure
+ * extension via `register()` — the shipped DEFAULT_DEFS are never modified (OCP).
+ */
+export function registerBehaviouralRelationships(registry: RelationshipTypeRegistry): void {
+  for (const def of BEHAVIOURAL_RELATIONSHIP_DEFS) {
+    registry.register(def);
   }
 }
 

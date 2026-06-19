@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L3/orchestration-flow.schema.json",
+  "title": "OrchestrationFlow",
+  "description": "L3 — A runtime behaviour sequence: an ordered set of orchestration steps, kicked off by a trigger and owned by a service. Step membership is held as ordered step ids; the edges between steps and the rest of the graph are modelled as relationships.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name", "steps"],
+  "properties": {
+    "type": { "const": "OrchestrationFlow" },
+    "name": { "type": "string", "minLength": 1 },
+    "trigger": {
+      "type": "string",
+      "description": "What initiates the flow (e.g. the name of an Event or Command)."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Ordered OrchestrationStep ids that make up the flow."
+    },
+    "owningService": { "type": "string" }
+  }
+}

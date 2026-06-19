@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { RelationshipTypeRegistry } from "../src/index";
+import {
+  BEHAVIOURAL_RELATIONSHIP_DEFS,
+  RelationshipTypeRegistry,
+  registerBehaviouralRelationships,
+} from "../src/index";
 
 describe("RelationshipTypeRegistry — cardinality enforcement", () => {
   const reg = new RelationshipTypeRegistry();
@@ -39,5 +43,68 @@ describe("RelationshipTypeRegistry — cardinality enforcement", () => {
     expect(reg.has("approves")).toBe(true);
     expect(reg.canAddEdge("approves", 1).valid).toBe(false);
     expect(reg.checkMinimum("approves", 0).valid).toBe(false);
+  });
+
+  // Feature 2.1 — acceptance criterion 8: every Decision must have ≥1 produces (outcome) edge.
+  it("flags a Decision with zero produces edges as incomplete (≥1 required)", () => {
+    const result = reg.checkMinimum("produces", 0);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]?.keyword).toBe("minCardinality");
+  });
+
+  it("accepts a Decision with one produces edge", () => {
+    expect(reg.checkMinimum("produces", 1).valid).toBe(true);
+  });
+});
+
+// Feature 2.1 — behavioural edge types are added additively via register() (task §3 / OCP).
+describe("RelationshipTypeRegistry — behavioural edge registration (additive)", () => {
+  it("the default registry does not carry the behavioural edge types out of the box", () => {
+    const reg = new RelationshipTypeRegistry();
+    for (const name of ["triggers", "transitionsTo", "compensates", "invokes"]) {
+      expect(reg.has(name)).toBe(false);
+    }
+  });
+
+  it("registers exactly the four behavioural edge types not already present", () => {
+    const reg = new RelationshipTypeRegistry();
+    registerBehaviouralRelationships(reg);
+    for (const def of BEHAVIOURAL_RELATIONSHIP_DEFS) {
+      expect(reg.has(def.name)).toBe(true);
+    }
+    expect(BEHAVIOURAL_RELATIONSHIP_DEFS.map((d) => d.name).sort()).toEqual(
+      ["compensates", "invokes", "transitionsTo", "triggers"],
+    );
+  });
+
+  it("does not touch the previously-shipped DEFAULT_DEFS (evaluates/produces still enforced)", () => {
+    const reg = new RelationshipTypeRegistry();
+    registerBehaviouralRelationships(reg);
+    expect(reg.checkMinimum("evaluates", 0).valid).toBe(false);
+    expect(reg.checkMinimum("produces", 0).valid).toBe(false);
+  });
+});
+
+// Feature 2.1 — acceptance criterion 9: conditional cross-field rule (spec 001 Open Q1).
+// Enforced in the cardinality/quality layer, NOT in structural JSON Schema.
+describe("RelationshipTypeRegistry — automated Decision requires a triggeredBy edge", () => {
+  const reg = new RelationshipTypeRegistry();
+
+  it("rejects an automated Decision with zero triggeredBy edges", () => {
+    const result = reg.checkAutomatedDecisionTrigger("automated", 0);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]?.keyword).toBe("conditionalCardinality");
+  });
+
+  it("accepts an automated Decision with one triggeredBy edge", () => {
+    expect(reg.checkAutomatedDecisionTrigger("automated", 1).valid).toBe(true);
+  });
+
+  it("accepts a manual Decision with zero triggeredBy edges", () => {
+    expect(reg.checkAutomatedDecisionTrigger("manual", 0).valid).toBe(true);
+  });
+
+  it("accepts a hybrid Decision with zero triggeredBy edges (rule is automated-only)", () => {
+    expect(reg.checkAutomatedDecisionTrigger("hybrid", 0).valid).toBe(true);
   });
 });

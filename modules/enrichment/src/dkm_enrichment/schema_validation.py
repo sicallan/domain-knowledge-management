@@ -48,6 +48,7 @@ class SchemaValidator:
     def __init__(self, schemas_dir: Path | None = None) -> None:
         self._dir = schemas_dir or find_schemas_dir()
         self._by_type: dict[str, dict[str, Any]] = {}
+        self._by_id: dict[str, dict[str, Any]] = {}
         self._registry = self._build_registry()
 
     def _build_registry(self) -> Registry:
@@ -56,6 +57,7 @@ class SchemaValidator:
             schema = json.loads(path.read_text(encoding="utf-8"))
             schema_id = schema.get("$id", path.as_uri())
             resources.append((schema_id, Resource.from_contents(schema)))
+            self._by_id[schema_id] = schema
             type_const = _extract_type_const(schema)
             if type_const is not None:
                 self._by_type[type_const] = schema
@@ -90,6 +92,26 @@ class SchemaValidator:
         schema = self._by_type.get(type_name)
         if schema is None:
             return ValidationOutcome(False, f"Unknown inventory type: {type_name}")
+        validator = Draft202012Validator(schema, registry=self._registry)
+        errors = list(validator.iter_errors(data))
+        if not errors:
+            return ValidationOutcome(True)
+        match = best_match(errors)
+        path = "/" + "/".join(str(p) for p in (match.absolute_path if match else []))
+        message = match.message if match else "validation error"
+        return ValidationOutcome(False, f"{path}: {message}")
+
+    def validate_against_schema_id(self, schema_id: str, data: dict[str, Any]) -> ValidationOutcome:
+        """Validate a payload against any discovered schema by its ``$id``.
+
+        Mirrors the TS ``SchemaValidator.validateAgainstSchemaId`` so the unified
+        relationship fixtures (validated against the behavioural / decision-specific
+        relationship schemas) yield the same verdict in both ecosystems.
+        """
+
+        schema = self._by_id.get(schema_id)
+        if schema is None:
+            return ValidationOutcome(False, f"Unknown schema id: {schema_id}")
         validator = Draft202012Validator(schema, registry=self._registry)
         errors = list(validator.iter_errors(data))
         if not errors:

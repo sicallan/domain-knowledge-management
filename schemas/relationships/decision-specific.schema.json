@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+  "title": "DecisionSpecificRelationship",
+  "description": "Decision-specific edges (plan.md §Decision-specific). Extends the relationship base with the decision relationshipType enum and the allowed {sourceType, targetType} endpoint pairs. The evaluates≥1 / produces≥1 minimums and the automated⇒triggeredBy conditional are enforced by the RelationshipTypeRegistry, not here (a single-edge schema cannot see edge counts).",
+  "type": "object",
+  "required": ["sourceType", "targetType"],
+  "properties": {
+    "relationshipType": {
+      "type": "string",
+      "enum": ["evaluates", "consumes", "constrainedBy", "triggeredBy", "produces", "realizedBy"]
+    },
+    "sourceType": { "type": "string", "minLength": 1, "description": "Inventory type of the source endpoint." },
+    "targetType": { "type": "string", "minLength": 1, "description": "Inventory type of the target endpoint." }
+  },
+  "allOf": [
+    { "$ref": "https://dkm.dev/schemas/relationships/relationship.schema.json" },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "evaluates" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "Decision" },
+          "targetType": { "enum": ["Rule", "BusinessInvariant"] }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "consumes" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "Decision" },
+          "targetType": { "const": "ReferenceData" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "constrainedBy" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "Decision" },
+          "targetType": { "const": "BusinessInvariant" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "triggeredBy" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "enum": ["Event", "OrchestrationStep"] },
+          "targetType": { "const": "Decision" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "produces" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "Decision" },
+          "targetType": { "enum": ["Event", "Command", "StateTransition"] }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "realizedBy" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "Decision" },
+          "targetType": { "enum": ["Service", "Component"] }
+        }
+      }
+    }
+  ]
+}

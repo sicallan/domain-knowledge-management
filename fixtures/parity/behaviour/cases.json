@@ -1,0 +1,546 @@
+{
+  "$comment": "Unified cross-validator fixture set for Phase 2.1 behaviour + decision schemas (spec 001 Decision 3). Read by BOTH the Ajv (TypeScript) and jsonschema (Python) test paths; every case must yield the same valid/invalid verdict in both. Invalid cases fail on format-agnostic keywords (required/enum/type/minItems/const) only, so the two ecosystems agree regardless of format-assertion settings; all uuid/date-time values are well-formed for the same reason.",
+  "entries": [
+    {
+      "name": "OrchestrationFlow/valid",
+      "type": "OrchestrationFlow",
+      "expectValid": true,
+      "payload": {
+        "id": "a1b2c3d4-0001-4111-8111-000000000001",
+        "type": "OrchestrationFlow",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "validTo": null,
+        "evidencedBy": [{ "source": "payments-flow.md", "location": "§3", "fetchedAt": "2026-01-01T00:00:00Z", "sourceAuthority": "scheme" }],
+        "confidence": 0.91,
+        "name": "Card Authorisation Flow",
+        "trigger": "AuthorisationRequested",
+        "steps": ["a1b2c3d4-0001-4111-8111-0000000000a1", "a1b2c3d4-0001-4111-8111-0000000000a2"],
+        "owningService": "authorisation-service"
+      }
+    },
+    {
+      "name": "OrchestrationFlow/invalid-missing-name",
+      "type": "OrchestrationFlow",
+      "expectValid": false,
+      "payload": {
+        "id": "a1b2c3d4-0002-4111-8111-000000000002",
+        "type": "OrchestrationFlow",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "trigger": "AuthorisationRequested",
+        "steps": ["a1b2c3d4-0001-4111-8111-0000000000a1"]
+      }
+    },
+    {
+      "name": "OrchestrationFlow/invalid-empty-steps",
+      "type": "OrchestrationFlow",
+      "expectValid": false,
+      "payload": {
+        "id": "a1b2c3d4-0003-4111-8111-000000000003",
+        "type": "OrchestrationFlow",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "name": "Empty Flow",
+        "steps": []
+      }
+    },
+    {
+      "name": "OrchestrationStep/valid",
+      "type": "OrchestrationStep",
+      "expectValid": true,
+      "payload": {
+        "id": "a1b2c3d4-0004-4111-8111-000000000004",
+        "type": "OrchestrationStep",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "validTo": null,
+        "evidencedBy": [{ "source": "payments-flow.md", "location": "§3.1", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "confidence": 0.88,
+        "sequence": 1,
+        "actionType": "invoke-service",
+        "serviceOrComponent": "risk-scoring-service",
+        "input": "AuthorisationRequest",
+        "output": "RiskScore"
+      }
+    },
+    {
+      "name": "OrchestrationStep/invalid-missing-sequence",
+      "type": "OrchestrationStep",
+      "expectValid": false,
+      "payload": {
+        "id": "a1b2c3d4-0005-4111-8111-000000000005",
+        "type": "OrchestrationStep",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "actionType": "invoke-service"
+      }
+    },
+    {
+      "name": "OrchestrationStep/invalid-sequence-wrong-type",
+      "type": "OrchestrationStep",
+      "expectValid": false,
+      "payload": {
+        "id": "a1b2c3d4-0006-4111-8111-000000000006",
+        "type": "OrchestrationStep",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "sequence": "first",
+        "actionType": "invoke-service"
+      }
+    },
+    {
+      "name": "Event/valid",
+      "type": "Event",
+      "expectValid": true,
+      "payload": {
+        "id": "a1b2c3d4-0007-4111-8111-000000000007",
+        "type": "Event",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "validTo": null,
+        "evidencedBy": [{ "source": "events-catalogue.md", "location": "§2", "fetchedAt": "2026-01-01T00:00:00Z", "sourceAuthority": "scheme" }],
+        "confidence": 0.9,
+        "name": "AuthorisationApproved",
+        "eventType": "domain",
+        "emitter": "authorisation-service",
+        "consumers": ["ledger-service", "notification-service"],
+        "transport": "kafka"
+      }
+    },
+    {
+      "name": "Event/invalid-missing-eventType",
+      "type": "Event",
+      "expectValid": false,
+      "payload": {
+        "id": "a1b2c3d4-0008-4111-8111-000000000008",
+        "type": "Event",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "events-catalogue.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "name": "AuthorisationApproved"
+      }
+    },
+    {
+      "name": "Event/invalid-bad-eventType-enum",
+      "type": "Event",
+      "expectValid": false,
+      "payload": {
+        "id": "a1b2c3d4-0009-4111-8111-000000000009",
+        "type": "Event",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "events-catalogue.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "name": "AuthorisationApproved",
+        "eventType": "webhook"
+      }
+    },
+    {
+      "name": "StateTransition/valid",
+      "type": "StateTransition",
+      "expectValid": true,
+      "payload": {
+        "id": "a1b2c3d4-000a-4111-8111-00000000000a",
+        "type": "StateTransition",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "validTo": null,
+        "evidencedBy": [{ "source": "payments-flow.md", "location": "§4", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "confidence": 0.87,
+        "entity": "Authorisation",
+        "fromState": "pending",
+        "toState": "approved",
+        "trigger": "AuthorisationApproved",
+        "guardCondition": "riskScore < threshold"
+      }
+    },
+    {
+      "name": "StateTransition/invalid-missing-toState",
+      "type": "StateTransition",
+      "expectValid": false,
+      "payload": {
+        "id": "a1b2c3d4-000b-4111-8111-00000000000b",
+        "type": "StateTransition",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "entity": "Authorisation",
+        "fromState": "pending"
+      }
+    },
+    {
+      "name": "StateTransition/invalid-fromState-wrong-type",
+      "type": "StateTransition",
+      "expectValid": false,
+      "payload": {
+        "id": "a1b2c3d4-000c-4111-8111-00000000000c",
+        "type": "StateTransition",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "entity": "Authorisation",
+        "fromState": 123,
+        "toState": "approved"
+      }
+    },
+    {
+      "name": "Decision/valid",
+      "type": "Decision",
+      "expectValid": true,
+      "payload": {
+        "id": "a1b2c3d4-000d-4111-8111-00000000000d",
+        "type": "Decision",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "validTo": null,
+        "evidencedBy": [{ "source": "decision-log.md", "location": "§1", "fetchedAt": "2026-01-01T00:00:00Z", "sourceAuthority": "scheme" }],
+        "confidence": 0.93,
+        "name": "Authorise Transaction",
+        "decisionType": "automated",
+        "inputs": ["amount", "riskScore"],
+        "outcomes": ["approve", "decline", "refer"],
+        "owner": "Risk Team",
+        "frequency": "per-transaction",
+        "latencyBudget": "50ms"
+      }
+    },
+    {
+      "name": "Decision/invalid-missing-outcomes",
+      "type": "Decision",
+      "expectValid": false,
+      "payload": {
+        "id": "a1b2c3d4-000e-4111-8111-00000000000e",
+        "type": "Decision",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "name": "Authorise Transaction",
+        "decisionType": "automated"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "name": "behavioural/triggers-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/behavioural.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "b1b2c3d4-0001-4111-8111-000000000001",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "triggers",
+        "sourceId": "event-auth-requested",
+        "targetId": "flow-card-authorisation",
+        "sourceType": "Event",
+        "targetType": "OrchestrationFlow",
+        "direction": "directed",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "behavioural/triggers-bad-source-endpoint",
+      "schemaId": "https://dkm.dev/schemas/relationships/behavioural.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "b1b2c3d4-0002-4111-8111-000000000002",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "triggers",
+        "sourceId": "rule-1",
+        "targetId": "flow-card-authorisation",
+        "sourceType": "Rule",
+        "targetType": "OrchestrationFlow",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "behavioural/emits-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/behavioural.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "b1b2c3d4-0003-4111-8111-000000000003",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "emits",
+        "sourceId": "authorisation-service",
+        "targetId": "event-auth-approved",
+        "sourceType": "Service",
+        "targetType": "Event",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "behavioural/transitionsTo-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/behavioural.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "b1b2c3d4-0004-4111-8111-000000000004",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "transitionsTo",
+        "sourceId": "step-approve",
+        "targetId": "transition-pending-approved",
+        "sourceType": "OrchestrationStep",
+        "targetType": "StateTransition",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "behavioural/invokes-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/behavioural.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "b1b2c3d4-0005-4111-8111-000000000005",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "invokes",
+        "sourceId": "step-score",
+        "targetId": "decision-authorise",
+        "sourceType": "OrchestrationStep",
+        "targetType": "Decision",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "behavioural/compensates-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/behavioural.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "b1b2c3d4-0006-4111-8111-000000000006",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "compensates",
+        "sourceId": "step-refund",
+        "targetId": "step-capture",
+        "sourceType": "OrchestrationStep",
+        "targetType": "OrchestrationStep",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "behavioural/invalid-missing-sourceType",
+      "schemaId": "https://dkm.dev/schemas/relationships/behavioural.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "b1b2c3d4-0007-4111-8111-000000000007",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "triggers",
+        "sourceId": "event-auth-requested",
+        "targetId": "flow-card-authorisation",
+        "targetType": "OrchestrationFlow",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "behavioural/invalid-kind-not-in-enum",
+      "schemaId": "https://dkm.dev/schemas/relationships/behavioural.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "b1b2c3d4-0008-4111-8111-000000000008",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "evaluates",
+        "sourceId": "decision-authorise",
+        "targetId": "rule-limit",
+        "sourceType": "Decision",
+        "targetType": "Rule",
+        "evidencedBy": [{ "source": "payments-flow.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/evaluates-rule-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "c1b2c3d4-0001-4111-8111-000000000001",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "evaluates",
+        "sourceId": "decision-authorise",
+        "targetId": "rule-daily-limit",
+        "sourceType": "Decision",
+        "targetType": "Rule",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/evaluates-invariant-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "c1b2c3d4-0002-4111-8111-000000000002",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "evaluates",
+        "sourceId": "decision-authorise",
+        "targetId": "invariant-balance",
+        "sourceType": "Decision",
+        "targetType": "BusinessInvariant",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/evaluates-bad-target-endpoint",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "c1b2c3d4-0003-4111-8111-000000000003",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "evaluates",
+        "sourceId": "decision-authorise",
+        "targetId": "authorisation-service",
+        "sourceType": "Decision",
+        "targetType": "Service",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/produces-event-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "c1b2c3d4-0004-4111-8111-000000000004",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "produces",
+        "sourceId": "decision-authorise",
+        "targetId": "event-auth-approved",
+        "sourceType": "Decision",
+        "targetType": "Event",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/produces-statetransition-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "c1b2c3d4-0005-4111-8111-000000000005",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "produces",
+        "sourceId": "decision-authorise",
+        "targetId": "transition-pending-approved",
+        "sourceType": "Decision",
+        "targetType": "StateTransition",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/triggeredBy-event-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "c1b2c3d4-0006-4111-8111-000000000006",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "triggeredBy",
+        "sourceId": "event-auth-requested",
+        "targetId": "decision-authorise",
+        "sourceType": "Event",
+        "targetType": "Decision",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/triggeredBy-bad-source-endpoint",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "c1b2c3d4-0007-4111-8111-000000000007",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "triggeredBy",
+        "sourceId": "rule-1",
+        "targetId": "decision-authorise",
+        "sourceType": "Rule",
+        "targetType": "Decision",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/realizedBy-service-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "c1b2c3d4-0008-4111-8111-000000000008",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "realizedBy",
+        "sourceId": "decision-authorise",
+        "targetId": "authorisation-service",
+        "sourceType": "Decision",
+        "targetType": "Service",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/consumes-referencedata-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "c1b2c3d4-0009-4111-8111-000000000009",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "consumes",
+        "sourceId": "decision-authorise",
+        "targetId": "fraud-reference-dataset",
+        "sourceType": "Decision",
+        "targetType": "ReferenceData",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/constrainedBy-invariant-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "c1b2c3d4-000a-4111-8111-00000000000a",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "constrainedBy",
+        "sourceId": "decision-authorise",
+        "targetId": "invariant-balance",
+        "sourceType": "Decision",
+        "targetType": "BusinessInvariant",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "decision-specific/invalid-kind-not-in-enum",
+      "schemaId": "https://dkm.dev/schemas/relationships/decision-specific.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "c1b2c3d4-000b-4111-8111-00000000000b",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "triggers",
+        "sourceId": "event-auth-requested",
+        "targetId": "flow-card-authorisation",
+        "sourceType": "Event",
+        "targetType": "OrchestrationFlow",
+        "evidencedBy": [{ "source": "decision-log.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    }
+  ]
+}

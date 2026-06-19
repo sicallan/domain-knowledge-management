@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/relationships/behavioural.schema.json",
+  "title": "BehaviouralRelationship",
+  "description": "Behavioural edges between behaviour-layer entries (plan.md §Behavioural). Extends the relationship base with the behavioural relationshipType enum and the allowed {sourceType, targetType} endpoint pairs. Minimum-cardinality / conditional rules live in the RelationshipTypeRegistry, not here.",
+  "type": "object",
+  "required": ["sourceType", "targetType"],
+  "properties": {
+    "relationshipType": {
+      "type": "string",
+      "enum": ["triggers", "emits", "consumes", "transitionsTo", "compensates", "invokes"]
+    },
+    "sourceType": { "type": "string", "minLength": 1, "description": "Inventory type of the source endpoint." },
+    "targetType": { "type": "string", "minLength": 1, "description": "Inventory type of the target endpoint." }
+  },
+  "allOf": [
+    { "$ref": "https://dkm.dev/schemas/relationships/relationship.schema.json" },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "triggers" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "enum": ["Event", "Command"] },
+          "targetType": { "const": "OrchestrationFlow" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "emits" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "enum": ["Service", "OrchestrationStep"] },
+          "targetType": { "const": "Event" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "consumes" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "Service" },
+          "targetType": { "const": "Event" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "transitionsTo" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "OrchestrationStep" },
+          "targetType": { "const": "StateTransition" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "compensates" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "OrchestrationStep" },
+          "targetType": { "const": "OrchestrationStep" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "invokes" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "OrchestrationStep" },
+          "targetType": { "const": "Decision" }
+        }
+      }
+    }
+  ]
+}

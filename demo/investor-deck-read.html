@@ -108,7 +108,7 @@
       <polygon points="60,34 82.5,47 82.5,73 60,86 37.5,73 37.5,47" fill="url(#gd)" stroke="#f5b301" stroke-width="2.5"/>
       <circle cx="60" cy="60" r="6" fill="#1a1206"/>
     </svg>
-    <span class="wm">Verit<span class="g">graph</span></span>
+    <span class="wm" data-vg="wordmark">Verit<span class="g">graph</span></span>
   </span>
   <span class="meta">Investor memo · Confidential</span>
 </div>
@@ -116,13 +116,13 @@
 <main>
   <header class="hero">
     <h1>The domain truth layer for <span class="gold">agentic AI</span>.</h1>
-    <div class="tag">Veritgraph — the living, evidenced knowledge graph enterprises need before they can trust agents with their domain.</div>
+    <div class="tag" data-vg="tagline">The domain truth layer for agentic AI.</div>
     <p>Enterprises are racing to put AI agents to work on their core business. But an agent is only as good as the knowledge it reasons over — and today that knowledge is locked in prose, disconnected from reality, and impossible to audit. We turn it into a structured, decisions-first knowledge graph agents can act on.</p>
     <div class="meta-row">
       <span class="pill"><b>Raising:</b> <span class="ph">[ $X.XM ] seed</span></span>
       <span class="pill"><b>Stage:</b> MVP shipped &amp; running</span>
       <span class="pill"><b>Beachhead:</b> Payments</span>
-      <span class="pill"><span class="ph">[ founders@veritgraph.ai ]</span></span>
+      <span class="pill"><span data-vg="email">founders@veritgraph.ai</span></span>
     </div>
     <nav class="toc">
       <a href="#s1"><span class="n">01</span> The problem</a>
@@ -145,7 +145,7 @@
     <div class="dek">Your AI strategy is only as trustworthy as the knowledge beneath it — and right now, that's a wiki.</div>
     <p>Every enterprise has an agentic mandate and a budget. But the agents stall the moment they touch the real domain, because the knowledge they depend on is:</p>
     <ul>
-      <li><b>Locked in prose</b> — vendor docs, project specs, runbooks and tribal knowledge that no model can reliably reason over. An estimated <span class="ph">[ ~80% ]</span> of enterprise information is unstructured.<span class="prov"> [ source ]</span></li>
+      <li><b>Locked in prose</b> — vendor docs, project specs, runbooks and tribal knowledge that no model can reliably reason over. By common industry estimates, <strong>up to 80–90%</strong> of enterprise information is unstructured.<span class="prov"> [ confirm with your preferred citation — e.g. IDC / Gartner ]</span></li>
       <li><b>Disconnected from reality</b> — what the documentation says, what was actually built, and what runs in production have quietly drifted apart, so retrieval returns confident but wrong answers.</li>
       <li><b>Impossible to audit</b> — when an agent makes an assertion, no one can see the evidence, the decision logic, or the owner. In regulated domains, "the model said so" is not an answer.</li>
     </ul>
@@ -157,7 +157,7 @@
   <section id="s2">
     <div class="sec-h"><span class="num">02</span><h2>The solution</h2></div>
     <div class="dek">Truth, not text — a living, evidenced knowledge graph with decisions as first-class nodes.</div>
-    <p>Veritgraph continuously ingests an enterprise's source material — documents <em>and</em> operational telemetry — and structures it into a <strong>living knowledge graph</strong>. The core principle: this is not a document store. Every artifact must populate, update or evidence a <strong>typed inventory entry</strong> with explicit relationships.</p>
+    <p><span data-vg="name">Veritgraph</span> continuously ingests an enterprise's source material — documents <em>and</em> operational telemetry — and structures it into a <strong>living knowledge graph</strong>. The core principle: this is not a document store. Every artifact must populate, update or evidence a <strong>typed inventory entry</strong> with explicit relationships.</p>
     <ul>
       <li>The <b>document</b> is the evidence; the <b>entry</b> is the assertion; the <b>graph</b> connects assertions; <b>views</b> interpret it; <b>agents</b> reason over it — with the source for every claim.</li>
       <li><b class="gold">Decisions are first-class.</b> Where logic selects an outcome from inputs, rules, reference data and invariants — the points where regulation bites and errors are costliest — are modelled explicitly, not buried in paragraphs.</li>
@@ -165,7 +165,7 @@
     </ul>
     <div class="cards c2">
       <div class="card"><h4>❌ RAG on documents</h4><p>Hands the agent text. No structure, no relationships, no evidence, no decision logic — confident answers nobody can verify.</p></div>
-      <div class="card k"><h4>✅ Veritgraph</h4><p>Hands the agent a typed, evidenced subgraph: the concepts and decisions, the rules and data behind them, and the provenance for every assertion.</p></div>
+      <div class="card k"><h4>✅ <span data-vg="name">Veritgraph</span></h4><p>Hands the agent a typed, evidenced subgraph: the concepts and decisions, the rules and data behind them, and the provenance for every assertion.</p></div>
     </div>
   </section>
 
@@ -189,7 +189,7 @@
   <section id="s4">
     <div class="sec-h"><span class="num">04</span><h2>Product &amp; technology</h2></div>
     <div class="dek">Defensible by architecture — the hard parts are built in, not bolted on.</div>
-    <p>Veritgraph is anchored in an opinionated, four-layer Domain-Driven-Design model. One <strong>canonical truth</strong> that everything else maps <em>to</em>, so you can compare what was promised, what was specified, and what actually runs:</p>
+    <p><span data-vg="name">Veritgraph</span> is anchored in an opinionated, four-layer Domain-Driven-Design model. One <strong>canonical truth</strong> that everything else maps <em>to</em>, so you can compare what was promised, what was specified, and what actually runs:</p>
     <table class="tbl">
       <thead><tr><th>Layer</th><th>What it captures</th></tr></thead>
       <tbody>
@@ -229,7 +229,7 @@
   <section id="s6">
     <div class="sec-h"><span class="num">06</span><h2>Business model</h2></div>
     <div class="dek">Platform subscription, land-and-expand — priced to the value of the decisions it protects.</div>
-    <p>An annual platform fee per domain, plus metered usage (ingestion volume and agent queries). We land in a single bounded context, prove value, and expand across domains and seats as Veritgraph becomes the system of record for domain truth.</p>
+    <p>An annual platform fee per domain, plus metered usage (ingestion volume and agent queries). We land in a single bounded context, prove value, and expand across domains and seats as <span data-vg="name">Veritgraph</span> becomes the system of record for domain truth.</p>
     <table class="tbl">
       <thead><tr><th>Stream</th><th>Pricing</th><th>Driver</th></tr></thead>
       <tbody>
@@ -243,7 +243,7 @@
       <div class="card"><h4>Gross margin</h4><p class="stat" style="font-size:26px"><span class="ph">[ ~XX% ]</span></p></div>
       <div class="card gold"><h4>Net revenue retention</h4><p class="stat" style="font-size:26px"><span class="ph">[ &gt;120% ]</span></p></div>
     </div>
-    <div class="note"><b>Why it expands:</b> once an enterprise's domain truth lives in Veritgraph, every new agent, team and domain pulls more value through the same graph — structurally high NRR.</div>
+    <div class="note"><b>Why it expands:</b> once an enterprise's domain truth lives in <span data-vg="name">Veritgraph</span>, every new agent, team and domain pulls more value through the same graph — structurally high NRR.</div>
   </section>
 
   <!-- 7 GTM -->
@@ -265,7 +265,7 @@
     <div class="dek">Everyone indexes documents. No one models the decisions.</div>
     <p>Adjacent tools each solve a slice — but treat enterprise knowledge as flat text to retrieve, not as a structured, evidenced domain to reason over.</p>
     <table class="tbl">
-      <thead><tr><th>Capability</th><th>Enterprise RAG / search</th><th>Knowledge-graph platforms</th><th>Data catalogs</th><th>GRC tools</th><th class="you">Veritgraph</th></tr></thead>
+      <thead><tr><th>Capability</th><th>Enterprise RAG / search</th><th>Knowledge-graph platforms</th><th>Data catalogs</th><th>GRC tools</th><th class="you"><span data-vg="name">Veritgraph</span></th></tr></thead>
       <tbody>
         <tr><td>Decisions as first-class</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td>partial</td><td class="you yes">✓</td></tr>
         <tr><td>Evidence + bi-temporal lineage</td><td class="no">—</td><td>partial</td><td>partial</td><td>partial</td><td class="you yes">✓</td></tr>
@@ -274,7 +274,7 @@
         <tr><td>Extend without core change (OCP)</td><td class="no">—</td><td>partial</td><td class="no">—</td><td class="no">—</td><td class="you yes">✓</td></tr>
       </tbody>
     </table>
-    <div class="note"><b>Defensibility:</b> the decisions-first ontology, evidence/temporal model and agent-native retrieval compound and are hard to retrofit. <span class="ph">[ Name the 2–3 real competitors you'll be asked about and your one-line wedge against each. ]</span></div>
+    <div class="note"><b>Defensibility — suggested wedges.</b> <b>vs enterprise RAG:</b> "they retrieve passages; we model the decision and its evidence, so answers are auditable." <b>vs knowledge-graph platforms:</b> "they ship a graph engine; we ship an opinionated, decisions-first domain model out of the box." <b>vs data catalogs:</b> "they inventory data assets; we structure the decision logic that acts on them." <b>vs GRC tools:</b> "they document controls after the fact; we make live decisions and their evidence queryable by agents." <span class="ph">[ Swap in the 2–3 named competitors you'll actually be asked about. ]</span></div>
   </section>
 
   <!-- 9 TEAM -->
@@ -286,7 +286,7 @@
       <div class="card k"><h4><span class="ph">[ Name ] — CTO</span></h4><p><span class="ph">[ knowledge-graph / AI-infra engineer; shipped data platforms at scale ]</span></p></div>
       <div class="card"><h4><span class="ph">[ Advisors ]</span></h4><p><span class="ph">[ regulated-enterprise operators + agentic-AI researchers ]</span></p></div>
     </div>
-    <p><strong>Why us, why now:</strong> <span class="ph">[ 2–3 sentences — the specific experience that makes this team uniquely able to build and sell domain truth into regulated enterprises, and evidence of execution (this MVP shipped fast and clean). ]</span></p>
+    <p><strong>Why us, why now:</strong> we've lived this problem from both sides — owning <span class="ph">[ payments / decisioning ]</span> inside a regulated enterprise, where a single mis-modelled rule means real regulatory and financial exposure, and building <span class="ph">[ knowledge-graph / AI infrastructure ]</span> at scale. We know the buyers, the regulators' bar, and the architecture — and we've already shipped the hard part: a running, decisions-first knowledge graph. <span class="ph">[ Add the one undeniable credential per founder. ]</span></p>
   </section>
 
   <!-- 10 FINANCIALS -->
@@ -314,9 +314,36 @@
 
   <div class="foot">
     <p style="color:var(--muted)">The companies that win with agents won't have better models. They'll have <span class="gold">better knowledge</span>.</p>
-    <p style="margin-top:8px">Veritgraph · <span class="ph">[ founders@veritgraph.ai ]</span> · <span class="ph">[ veritgraph.ai ]</span> · Confidential</p>
+    <p style="margin-top:8px"><span data-vg="name">Veritgraph</span> · <span data-vg="email">founders@veritgraph.ai</span> · <span data-vg="site">veritgraph.ai</span> · Confidential</p>
   </div>
 </main>
+
+<script>
+  /* ───────────── BRAND CONFIG ─────────────
+     One place to set your identity. Change these five lines and both the
+     wordmark and every name/tagline/contact across the memo update. (All
+     investor data — TAM, metrics, raise, team — stays in the gold [ … ] chips.) */
+  window.VG = {
+    nameLead:   "Verit",                               /* wordmark — dark part  */
+    nameAccent: "graph",                               /* wordmark — gold part  */
+    tagline:    "The domain truth layer for agentic AI.",
+    email:      "founders@veritgraph.ai",
+    site:       "veritgraph.ai"
+  };
+  (function (b) {
+    var name = b.nameLead + b.nameAccent, t = document.title.split("—");
+    if (t.length > 1) document.title = name + " — " + t.slice(1).join("—").trim();
+    document.querySelectorAll("[data-vg]").forEach(function (el) {
+      var k = el.getAttribute("data-vg");
+      if (k === "wordmark") {
+        el.textContent = b.nameLead;
+        var s = document.createElement("span"); s.className = "g"; s.textContent = b.nameAccent;
+        el.appendChild(s);
+      } else if (k === "name") { el.textContent = name; }
+      else if (b[k] != null) { el.textContent = b[k]; }
+    });
+  })(window.VG);
+</script>
 
 <script>
   var p=document.getElementById('progress');

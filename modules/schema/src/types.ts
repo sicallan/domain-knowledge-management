@@ -44,10 +44,59 @@ export interface RelationshipEntry {
   relationshipType: string;
   sourceId: string;
   targetId: string;
+  /** Inventory type of the source endpoint (used by the behavioural / decision-specific edge schemas). */
+  sourceType?: string;
+  /** Inventory type of the target endpoint (used by the behavioural / decision-specific edge schemas). */
+  targetType?: string;
   direction?: "directed" | "bidirectional";
   confidence?: number;
   evidencedBy: Evidence[];
   metadata?: Record<string, unknown>;
+}
+
+// ---------------------------------------------------------------------------------------
+// Phase 2.1 — L3 behaviour types. Hand-written to mirror the authored JSON Schemas (there
+// is no codegen step; the schema files are the contract). All extend the open InventoryEntry
+// base, so common provenance/temporal/lifecycle fields apply uniformly.
+// ---------------------------------------------------------------------------------------
+
+/** L3 — a runtime behaviour sequence of orchestration steps. */
+export interface OrchestrationFlow extends InventoryEntry {
+  type: "OrchestrationFlow";
+  name: string;
+  trigger?: string;
+  steps: string[];
+  owningService?: string;
+}
+
+/** L3 — a single step within an orchestration flow. */
+export interface OrchestrationStep extends InventoryEntry {
+  type: "OrchestrationStep";
+  sequence: number;
+  actionType: string;
+  serviceOrComponent?: string;
+  input?: string;
+  output?: string;
+}
+
+/** L3 — a domain or integration event. `eventType` (not `type`) carries the domain/integration axis. */
+export interface DomainEvent extends InventoryEntry {
+  type: "Event";
+  name: string;
+  eventType: "domain" | "integration";
+  emitter?: string;
+  consumers?: string[];
+  transport?: string;
+}
+
+/** L3 — a change of an entity from one state to another. */
+export interface StateTransition extends InventoryEntry {
+  type: "StateTransition";
+  entity: string;
+  fromState: string;
+  toState: string;
+  trigger?: string;
+  guardCondition?: string;
 }
 
 /** Provenance object carried by intermediate JSONL entries (spec 003). */

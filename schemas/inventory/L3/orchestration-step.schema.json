@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L3/orchestration-step.schema.json",
+  "title": "OrchestrationStep",
+  "description": "L3 — A single step within an orchestration flow: its position in the sequence, the kind of action it performs, the service or component that performs it, and its input/output payloads.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["sequence", "actionType"],
+  "properties": {
+    "type": { "const": "OrchestrationStep" },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Zero-based position of the step within its owning flow."
+    },
+    "actionType": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The kind of action (e.g. invoke-service, publish-event, evaluate-decision)."
+    },
+    "serviceOrComponent": { "type": "string" },
+    "input": { "type": "string" },
+    "output": { "type": "string" }
+  }
+}

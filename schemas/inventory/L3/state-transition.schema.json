@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L3/state-transition.schema.json",
+  "title": "StateTransition",
+  "description": "L3 — A change of an entity from one state to another, fired by a trigger and optionally protected by a guard condition.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["entity", "fromState", "toState"],
+  "properties": {
+    "type": { "const": "StateTransition" },
+    "entity": { "type": "string", "minLength": 1, "description": "The entity whose state changes." },
+    "fromState": { "type": "string", "minLength": 1 },
+    "toState": { "type": "string", "minLength": 1 },
+    "trigger": { "type": "string", "description": "What fires the transition (e.g. an Event or Decision outcome)." },
+    "guardCondition": { "type": "string", "description": "Predicate that must hold for the transition to occur." }
+  }
+}

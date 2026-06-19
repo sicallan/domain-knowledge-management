@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L3/event.schema.json",
+  "title": "Event",
+  "description": "L3 — A domain or integration event: something that happened, emitted by a service and consumed by others. The axis field is `eventType` (not `type`) to avoid colliding with the base-entry `type` discriminator, matching the shipped `decisionType` convention.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name", "eventType"],
+  "properties": {
+    "type": { "const": "Event" },
+    "name": { "type": "string", "minLength": 1 },
+    "eventType": {
+      "type": "string",
+      "enum": ["domain", "integration"],
+      "description": "domain = within a bounded context; integration = crosses a context/system boundary."
+    },
+    "emitter": { "type": "string", "description": "Service or component that emits the event." },
+    "consumers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Services or components that consume the event."
+    },
+    "transport": { "type": "string", "description": "Delivery mechanism (e.g. kafka, sqs, webhook)." }
+  }
+}

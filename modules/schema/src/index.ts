@@ -6,7 +6,11 @@ export * from "./types";
 export { SchemaRegistry } from "./registry";
 export { SchemaValidator, buildSchemaModule } from "./validator";
 export type { SchemaModule } from "./validator";
-export { RelationshipTypeRegistry } from "./relationships";
+export {
+  RelationshipTypeRegistry,
+  registerBehaviouralRelationships,
+  BEHAVIOURAL_RELATIONSHIP_DEFS,
+} from "./relationships";
 export type { RelationshipTypeDef } from "./relationships";
 
 /** Absolute path to the repository's canonical `/schemas` directory. */

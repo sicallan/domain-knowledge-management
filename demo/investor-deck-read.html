@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en-GB">
+<!-- ============================================================================
+  VERITGRAPH — INVESTOR DECK (READ / LEAVE-BEHIND version)
+  Vertically scrolling, self-explanatory, print-to-PDF friendly. Stands alone
+  when emailed. Pair with investor-deck-present.html (the stage version).
+  BRAND placeholder: replace "Veritgraph" / tagline / contact throughout.
+  Investor placeholders are styled .ph chips — search "ph" to find them all.
+============================================================================= -->
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Veritgraph — Investor Memo (Read)</title>
+<style>
+  :root{
+    --bg:#080b18; --bg2:#0d1430; --ink:#eaeefb; --muted:#9aa6c6; --faint:#5d6b9a;
+    --card:rgba(255,255,255,.04); --edge:rgba(255,255,255,.10);
+    --indigo:#818cf8; --indigo2:#6366f1; --teal:#2dd4bf; --gold:#ffd24a; --gold2:#f5b301; --rose:#fb7185;
+    --maxw:940px; --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6;
+    background:radial-gradient(1100px 700px at 88% -6%,rgba(99,102,241,.18),transparent 60%),
+      radial-gradient(900px 600px at -5% 8%,rgba(45,212,191,.10),transparent 55%),
+      linear-gradient(170deg,var(--bg),var(--bg2));background-attachment:fixed}
+  .progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:60;
+    background:linear-gradient(90deg,var(--indigo),var(--teal),var(--gold))}
+  /* top bar */
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+    padding:13px clamp(16px,4vw,40px);backdrop-filter:blur(10px);background:rgba(8,11,24,.7);
+    border-bottom:1px solid var(--edge)}
+  .logo{display:inline-flex;align-items:center;gap:11px}
+  .logo .wm{font-size:19px;font-weight:850;letter-spacing:-.02em}.logo .wm .g{color:var(--gold)}
+  .topbar .meta{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  main{max-width:var(--maxw);margin:0 auto;padding:0 clamp(18px,4vw,28px)}
+  /* hero */
+  .hero{padding:72px 0 36px;border-bottom:1px solid var(--edge)}
+  .hero h1{font-size:clamp(34px,5.5vw,60px);line-height:1.04;letter-spacing:-.025em;font-weight:850}
+  .hero .tag{color:var(--gold);font-weight:700;font-size:clamp(15px,1.8vw,19px);margin-top:14px;letter-spacing:.01em}
+  .hero p{color:var(--muted);font-size:clamp(16px,1.7vw,19px);margin-top:18px;max-width:64ch}
+  .meta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+  .pill{font-size:13px;border:1px solid var(--edge);background:var(--card);padding:8px 14px;border-radius:999px;color:#d7ddf0}
+  .pill b{color:#fff}
+  /* contents */
+  .toc{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 26px;margin-top:30px}
+  @media(max-width:640px){.toc{grid-template-columns:1fr}}
+  .toc a{display:flex;gap:12px;color:var(--muted);text-decoration:none;font-size:14.5px;padding:6px 0;border-bottom:1px dashed rgba(140,160,220,.14)}
+  .toc a:hover{color:var(--ink)} .toc a .n{color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums;width:24px}
+  /* sections */
+  section{padding:48px 0;border-bottom:1px solid var(--edge)}
+  .sec-h{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+  .sec-h .num{font-size:13px;font-weight:800;color:var(--gold);letter-spacing:.12em;border:1px solid rgba(255,210,74,.4);
+    border-radius:7px;padding:3px 9px;background:rgba(255,210,74,.06)}
+  h2{font-size:clamp(24px,3.4vw,38px);line-height:1.1;letter-spacing:-.02em;font-weight:850}
+  .dek{color:var(--indigo);font-weight:700;font-size:clamp(15px,1.6vw,18px);margin:6px 0 18px}
+  p{color:#cfd6ee;font-size:clamp(15px,1.55vw,17px);margin-top:14px;max-width:70ch}
+  p .mut{color:var(--muted)}
+  strong{color:#fff;font-weight:700} .gold{color:var(--gold)} .ind{color:var(--indigo)}
+  .prov{font-style:italic;color:var(--gold);font-weight:600}
+  ul{margin:16px 0 0;padding-left:0;list-style:none;display:grid;gap:11px;max-width:72ch}
+  li{position:relative;padding-left:26px;color:#cfd6ee;font-size:clamp(14.5px,1.5vw,16.5px)}
+  li::before{content:"";position:absolute;left:0;top:.5em;width:10px;height:10px;border-radius:3px;transform:rotate(45deg);
+    background:linear-gradient(135deg,var(--indigo),var(--teal))}
+  li b{color:#fff}
+  .ph{color:var(--gold);border:1px dashed rgba(255,210,74,.6);border-radius:6px;padding:0 7px;font-weight:700;
+    font-size:.92em;white-space:nowrap;background:rgba(255,210,74,.06)}
+  .cards{display:grid;gap:14px;margin-top:22px}
+  .c2{grid-template-columns:repeat(2,1fr)} .c3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:680px){.c2,.c3{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:18px 20px}
+  .card h4{font-size:16px;font-weight:750;letter-spacing:-.01em}
+  .card p{font-size:14px;color:var(--muted);margin-top:7px}
+  .card.k{border-color:rgba(129,140,248,.4)} .card.gold{border-color:rgba(255,210,74,.42)}
+  .stat{font-size:clamp(26px,4vw,40px);font-weight:850;letter-spacing:-.02em;line-height:1;
+    background:linear-gradient(120deg,#fff,var(--indigo));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tbl{width:100%;border-collapse:collapse;margin-top:22px;font-size:14.5px}
+  .tbl th,.tbl td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--edge);vertical-align:top}
+  .tbl th{color:var(--faint);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .tbl td b{color:#fff} .tbl tr td:first-child{color:#fff;font-weight:600}
+  .tbl .you{background:rgba(255,210,74,.07)} .tbl .yes{color:var(--teal);font-weight:700} .tbl .no{color:var(--rose)}
+  .note{margin-top:20px;font-size:12.5px;color:var(--faint);border-left:2px solid var(--edge);padding:4px 0 4px 14px}
+  .note b{color:var(--muted)}
+  .bars{display:grid;gap:10px;margin-top:20px;max-width:560px}
+  .bar{display:grid;grid-template-columns:170px 1fr 48px;align-items:center;gap:12px;font-size:14px;color:#cfd6ee}
+  .bar .track{height:13px;border-radius:7px;background:rgba(255,255,255,.06);overflow:hidden}
+  .bar .fill{height:100%;background:linear-gradient(90deg,var(--indigo2),var(--teal))}.bar .fill.g{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+  .bar .pct{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+  .foot{padding:40px 0 70px;color:var(--faint);font-size:12.5px;text-align:center}
+  .legend{margin:22px 0 0;font-size:12.5px;color:var(--faint)}
+  .legend .ph{font-size:12px}
+  @media print{
+    body{background:#0a0e1c !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .topbar,.progress{display:none} section{break-inside:avoid;border-bottom:0;padding:24px 0}
+    .hero{padding-top:20px}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="topbar">
+  <span class="logo">
+    <svg width="26" height="26" viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="gd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f5b301"/></linearGradient>
+      <linearGradient id="id" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a5b4fc"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs>
+      <g stroke="url(#id)" stroke-width="4" stroke-linecap="round" opacity=".6"><line x1="60" y1="60" x2="98" y2="33"/><line x1="60" y1="60" x2="66" y2="104"/><line x1="60" y1="60" x2="18" y2="70"/></g>
+      <g fill="#080b18" stroke="url(#id)" stroke-width="4"><circle cx="98" cy="33" r="8"/><circle cx="66" cy="104" r="8"/><circle cx="18" cy="70" r="8"/></g>
+      <polygon points="60,34 82.5,47 82.5,73 60,86 37.5,73 37.5,47" fill="url(#gd)" stroke="#f5b301" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="6" fill="#1a1206"/>
+    </svg>
+    <span class="wm">Verit<span class="g">graph</span></span>
+  </span>
+  <span class="meta">Investor memo · Confidential</span>
+</div>
+
+<main>
+  <header class="hero">
+    <h1>The domain truth layer for <span class="gold">agentic AI</span>.</h1>
+    <div class="tag">Veritgraph — the living, evidenced knowledge graph enterprises need before they can trust agents with their domain.</div>
+    <p>Enterprises are racing to put AI agents to work on their core business. But an agent is only as good as the knowledge it reasons over — and today that knowledge is locked in prose, disconnected from reality, and impossible to audit. We turn it into a structured, decisions-first knowledge graph agents can act on.</p>
+    <div class="meta-row">
+      <span class="pill"><b>Raising:</b> <span class="ph">[ $X.XM ] seed</span></span>
+      <span class="pill"><b>Stage:</b> MVP shipped &amp; running</span>
+      <span class="pill"><b>Beachhead:</b> Payments</span>
+      <span class="pill"><span class="ph">[ founders@veritgraph.ai ]</span></span>
+    </div>
+    <nav class="toc">
+      <a href="#s1"><span class="n">01</span> The problem</a>
+      <a href="#s2"><span class="n">02</span> The solution</a>
+      <a href="#s3"><span class="n">03</span> Market opportunity</a>
+      <a href="#s4"><span class="n">04</span> Product &amp; technology</a>
+      <a href="#s5"><span class="n">05</span> Traction</a>
+      <a href="#s6"><span class="n">06</span> Business model</a>
+      <a href="#s7"><span class="n">07</span> Go-to-market</a>
+      <a href="#s8"><span class="n">08</span> Competitive landscape</a>
+      <a href="#s9"><span class="n">09</span> Team</a>
+      <a href="#s10"><span class="n">10</span> Financials &amp; use of funds</a>
+    </nav>
+    <p class="legend">Reading version — detailed and self-explanatory; pair with the stage deck for live pitches. <span class="ph">[ gold = replace with your data ]</span></p>
+  </header>
+
+  <!-- 1 PROBLEM -->
+  <section id="s1">
+    <div class="sec-h"><span class="num">01</span><h2>The problem</h2></div>
+    <div class="dek">Your AI strategy is only as trustworthy as the knowledge beneath it — and right now, that's a wiki.</div>
+    <p>Every enterprise has an agentic mandate and a budget. But the agents stall the moment they touch the real domain, because the knowledge they depend on is:</p>
+    <ul>
+      <li><b>Locked in prose</b> — vendor docs, project specs, runbooks and tribal knowledge that no model can reliably reason over. An estimated <span class="ph">[ ~80% ]</span> of enterprise information is unstructured.<span class="prov"> [ source ]</span></li>
+      <li><b>Disconnected from reality</b> — what the documentation says, what was actually built, and what runs in production have quietly drifted apart, so retrieval returns confident but wrong answers.</li>
+      <li><b>Impossible to audit</b> — when an agent makes an assertion, no one can see the evidence, the decision logic, or the owner. In regulated domains, "the model said so" is not an answer.</li>
+    </ul>
+    <p>The result: RAG-over-documents demos impress in a sandbox and then <strong>die in production</strong> at exactly the high-stakes decisions where the value — and the risk — concentrate.</p>
+    <div class="note"><b>Why it's urgent:</b> the enterprises moving fastest on agents hit this knowledge wall first, and they hit it on their most valuable, most regulated workflows. <span class="ph">[ Add 1 customer anecdote or a market stat with source ]</span></div>
+  </section>
+
+  <!-- 2 SOLUTION -->
+  <section id="s2">
+    <div class="sec-h"><span class="num">02</span><h2>The solution</h2></div>
+    <div class="dek">Truth, not text — a living, evidenced knowledge graph with decisions as first-class nodes.</div>
+    <p>Veritgraph continuously ingests an enterprise's source material — documents <em>and</em> operational telemetry — and structures it into a <strong>living knowledge graph</strong>. The core principle: this is not a document store. Every artifact must populate, update or evidence a <strong>typed inventory entry</strong> with explicit relationships.</p>
+    <ul>
+      <li>The <b>document</b> is the evidence; the <b>entry</b> is the assertion; the <b>graph</b> connects assertions; <b>views</b> interpret it; <b>agents</b> reason over it — with the source for every claim.</li>
+      <li><b class="gold">Decisions are first-class.</b> Where logic selects an outcome from inputs, rules, reference data and invariants — the points where regulation bites and errors are costliest — are modelled explicitly, not buried in paragraphs.</li>
+      <li>Everything is <b>evidenced</b> (linked to source provenance) and <b>bi-temporally versioned</b> — auditable and time-travellable from day one.</li>
+    </ul>
+    <div class="cards c2">
+      <div class="card"><h4>❌ RAG on documents</h4><p>Hands the agent text. No structure, no relationships, no evidence, no decision logic — confident answers nobody can verify.</p></div>
+      <div class="card k"><h4>✅ Veritgraph</h4><p>Hands the agent a typed, evidenced subgraph: the concepts and decisions, the rules and data behind them, and the provenance for every assertion.</p></div>
+    </div>
+  </section>
+
+  <!-- 3 MARKET -->
+  <section id="s3">
+    <div class="sec-h"><span class="num">03</span><h2>Market opportunity</h2></div>
+    <div class="dek">A market that compounds with every agent an enterprise deploys.</div>
+    <p>We sit at the intersection of three budgets that are all expanding at once: enterprise knowledge management, AI infrastructure, and governance/risk/compliance. Agentic adoption is the accelerant — each new agent initiative <strong>increases</strong> the need for a trustworthy knowledge substrate beneath it.</p>
+    <table class="tbl">
+      <thead><tr><th>Layer</th><th>Definition</th><th>Size</th><th>Basis / source</th></tr></thead>
+      <tbody>
+        <tr><td>TAM</td><td>Enterprise knowledge mgmt + AI infrastructure + GRC, globally</td><td><b><span class="ph">[ $XXB ]</span></b></td><td><span class="ph">[ analyst source, year ]</span></td></tr>
+        <tr><td>SAM</td><td>Regulated, complex-domain enterprises adopting agentic AI</td><td><b><span class="ph">[ $XB ]</span></b></td><td><span class="ph">[ bottoms-up: N accounts × ACV ]</span></td></tr>
+        <tr class="you"><td>SOM (3yr)</td><td>Beachhead: payments &amp; banking in <span class="ph">[ region ]</span></td><td><b><span class="ph">[ $XXM ]</span></b></td><td><span class="ph">[ N target accounts × $XXk ACV ]</span></td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>Why now:</b> LLMs make structuring messy enterprise knowledge feasible for the first time; agentic AI creates urgent, board-funded demand; and regulators are signalling that AI in critical domains will require traceable evidence and decision lineage — our core, not a feature.</div>
+  </section>
+
+  <!-- 4 PRODUCT -->
+  <section id="s4">
+    <div class="sec-h"><span class="num">04</span><h2>Product &amp; technology</h2></div>
+    <div class="dek">Defensible by architecture — the hard parts are built in, not bolted on.</div>
+    <p>Veritgraph is anchored in an opinionated, four-layer Domain-Driven-Design model. One <strong>canonical truth</strong> that everything else maps <em>to</em>, so you can compare what was promised, what was specified, and what actually runs:</p>
+    <table class="tbl">
+      <thead><tr><th>Layer</th><th>What it captures</th></tr></thead>
+      <tbody>
+        <tr><td>L0 · Strategic</td><td>Initiatives, value streams, roadmaps — the "why"</td></tr>
+        <tr class="you"><td>L1 · Pure Domain</td><td><b>Canonical truth</b> — domains, bounded contexts, concepts &amp; <span class="gold">decisions</span> (vendor-agnostic)</td></tr>
+        <tr><td>L2 · Functional</td><td>Vendor products &amp; project specs that claim to fulfil L1</td></tr>
+        <tr><td>L3 · Technical</td><td>Systems, services, runtime behaviour &amp; operational evidence</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c2">
+      <div class="card gold"><h4>Decisions-first ontology</h4><p>Decisions modelled as the highest-value nodes, wired to the rules, reference data and invariants that govern them.</p></div>
+      <div class="card"><h4>Extract once, load many</h4><p>Any source becomes typed, schema-validated records once, then fans out to graph, vector and relational stores. New sources/targets plug in without touching the core (open–closed).</p></div>
+      <div class="card"><h4>Evidence + bi-temporal lineage</h4><p>Every assertion carries provenance and a validity window — built for audit and regulation.</p></div>
+      <div class="card k"><h4>Agent-native retrieval</h4><p>Typed subgraphs and purpose-built views feed copilots, analysts and builder-agents — and can generate specs/services from canonical truth.</p></div>
+    </div>
+    <div class="note"><b>Moat:</b> the ontology, evidence model, temporal lineage and extensibility compound over time and are hard to retrofit onto a flat document index. <span class="ph">[ note any patents / proprietary datasets / prompts ]</span></div>
+  </section>
+
+  <!-- 5 TRACTION -->
+  <section id="s5">
+    <div class="sec-h"><span class="num">05</span><h2>Traction</h2></div>
+    <div class="dek">Proof, not slides — the engineering thesis is built and running.</div>
+    <p>Most pre-seed/seed companies sell a thesis. We've already de-risked ours: a real, end-to-end vertical slice runs today with a single command — <span class="ind">source → extraction → knowledge graph → query → a decisions-first Domain Map</span>.</p>
+    <div class="cards c3">
+      <div class="card k"><div class="stat">▶ live</div><p style="margin-top:8px">Working MVP: documents <em>and</em> a structured JSON source ingested through one pipeline into a decisions-first Domain Map.</p></div>
+      <div class="card"><div class="stat">7/7</div><p style="margin-top:8px">Phase-1 milestones shipped &amp; merged, with 270+ automated tests green in CI (TDD, deterministic, no secrets).</p></div>
+      <div class="card"><div class="stat">2</div><p style="margin-top:8px">Extensibility gates proven — a second connector and a second loader added with zero changes to the core.</p></div>
+    </div>
+    <ul>
+      <li><b>Commercial validation:</b> <span class="ph">[ N design partners / LOIs ]</span> in payments &amp; banking; <span class="ph">[ $XXk ]</span> pilot/committed pipeline. <span class="ph">[ named logos if permitted ]</span></li>
+      <li><b>Engineering credibility:</b> typed schemas, port/adapter architecture, evidence &amp; versioning and CI gates — enterprise-grade from line one, not a notebook demo.</li>
+    </ul>
+    <div class="note"><b>What the round buys:</b> distribution and domain depth — not science projects. The riskiest technical questions are already answered in code.</div>
+  </section>
+
+  <!-- 6 BUSINESS MODEL -->
+  <section id="s6">
+    <div class="sec-h"><span class="num">06</span><h2>Business model</h2></div>
+    <div class="dek">Platform subscription, land-and-expand — priced to the value of the decisions it protects.</div>
+    <p>An annual platform fee per domain, plus metered usage (ingestion volume and agent queries). We land in a single bounded context, prove value, and expand across domains and seats as Veritgraph becomes the system of record for domain truth.</p>
+    <table class="tbl">
+      <thead><tr><th>Stream</th><th>Pricing</th><th>Driver</th></tr></thead>
+      <tbody>
+        <tr><td>Platform</td><td><span class="ph">[ $XXk ]</span>/domain/yr</td><td>graph, pipeline, views, governance</td></tr>
+        <tr><td>Usage</td><td>metered</td><td>ingestion volume + agent queries</td></tr>
+        <tr><td>Expand</td><td>seats / new domains</td><td>builder-agent hand-off, OKF interchange</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c3">
+      <div class="card"><h4>LTV : CAC</h4><p class="stat" style="font-size:26px"><span class="ph">[ X : 1 ]</span></p></div>
+      <div class="card"><h4>Gross margin</h4><p class="stat" style="font-size:26px"><span class="ph">[ ~XX% ]</span></p></div>
+      <div class="card gold"><h4>Net revenue retention</h4><p class="stat" style="font-size:26px"><span class="ph">[ &gt;120% ]</span></p></div>
+    </div>
+    <div class="note"><b>Why it expands:</b> once an enterprise's domain truth lives in Veritgraph, every new agent, team and domain pulls more value through the same graph — structurally high NRR.</div>
+  </section>
+
+  <!-- 7 GTM -->
+  <section id="s7">
+    <div class="sec-h"><span class="num">07</span><h2>Go-to-market</h2></div>
+    <div class="dek">Land in Payments. Expand everywhere. Attach to budgets already being spent on agents.</div>
+    <div class="cards c3">
+      <div class="card gold"><h4>1 · Land</h4><p>Founder-led design partnerships with <span class="ph">[ N ]</span> payments &amp; banking enterprises — acute pain, deep budgets, unforgiving compliance. Tight, referenceable wins.</p></div>
+      <div class="card k"><h4>2 · Expand</h4><p>Grow account-by-domain into the system of record; net-revenue retention compounds with each new domain and agent programme.</p></div>
+      <div class="card"><h4>3 · Leverage</h4><p>Channel through SIs &amp; consultancies running agentic transformations; ecosystem positioning alongside the major agent platforms.</p></div>
+    </div>
+    <p>We don't ask for net-new budget — we attach to the <strong>agentic-AI spend enterprises are already committing</strong>, as the prerequisite that makes those programmes safe to ship.</p>
+    <div class="note"><b>Sales motion &amp; targets:</b> <span class="ph">[ ACV, sales cycle, first-N target accounts, partner pipeline ]</span>.</div>
+  </section>
+
+  <!-- 8 COMPETITION -->
+  <section id="s8">
+    <div class="sec-h"><span class="num">08</span><h2>Competitive landscape</h2></div>
+    <div class="dek">Everyone indexes documents. No one models the decisions.</div>
+    <p>Adjacent tools each solve a slice — but treat enterprise knowledge as flat text to retrieve, not as a structured, evidenced domain to reason over.</p>
+    <table class="tbl">
+      <thead><tr><th>Capability</th><th>Enterprise RAG / search</th><th>Knowledge-graph platforms</th><th>Data catalogs</th><th>GRC tools</th><th class="you">Veritgraph</th></tr></thead>
+      <tbody>
+        <tr><td>Decisions as first-class</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td>partial</td><td class="you yes">✓</td></tr>
+        <tr><td>Evidence + bi-temporal lineage</td><td class="no">—</td><td>partial</td><td>partial</td><td>partial</td><td class="you yes">✓</td></tr>
+        <tr><td>Four-layer domain model</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="you yes">✓</td></tr>
+        <tr><td>Agent-native retrieval</td><td>partial</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="you yes">✓</td></tr>
+        <tr><td>Extend without core change (OCP)</td><td class="no">—</td><td>partial</td><td class="no">—</td><td class="no">—</td><td class="you yes">✓</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>Defensibility:</b> the decisions-first ontology, evidence/temporal model and agent-native retrieval compound and are hard to retrofit. <span class="ph">[ Name the 2–3 real competitors you'll be asked about and your one-line wedge against each. ]</span></div>
+  </section>
+
+  <!-- 9 TEAM -->
+  <section id="s9">
+    <div class="sec-h"><span class="num">09</span><h2>Team</h2></div>
+    <div class="dek">Founder–problem fit: we've lived this pain and already shipped the hard part.</div>
+    <div class="cards c3">
+      <div class="card"><h4><span class="ph">[ Name ] — CEO</span></h4><p><span class="ph">[ ex-payments/banking leader; carried the domain &amp; GTM; relationships with target buyers ]</span></p></div>
+      <div class="card k"><h4><span class="ph">[ Name ] — CTO</span></h4><p><span class="ph">[ knowledge-graph / AI-infra engineer; shipped data platforms at scale ]</span></p></div>
+      <div class="card"><h4><span class="ph">[ Advisors ]</span></h4><p><span class="ph">[ regulated-enterprise operators + agentic-AI researchers ]</span></p></div>
+    </div>
+    <p><strong>Why us, why now:</strong> <span class="ph">[ 2–3 sentences — the specific experience that makes this team uniquely able to build and sell domain truth into regulated enterprises, and evidence of execution (this MVP shipped fast and clean). ]</span></p>
+  </section>
+
+  <!-- 10 FINANCIALS -->
+  <section id="s10">
+    <div class="sec-h"><span class="num">10</span><h2>Financials &amp; use of funds</h2></div>
+    <div class="dek">Raising <span class="ph">[ $X.XM ]</span> to turn a proven engine into a category.</div>
+    <p>The capital funds <span class="ph">[ ~18–24 ]</span> months of runway to <span class="ph">[ $XM ARR ]</span> and a Series A, by converting design partners into reference customers and deepening the payments domain.</p>
+    <table class="tbl">
+      <thead><tr><th>Year</th><th>Paying domains</th><th>ARR</th><th>Headcount</th></tr></thead>
+      <tbody>
+        <tr><td>Y1</td><td><span class="ph">[ N ]</span></td><td><span class="ph">[ $XXk ]</span></td><td><span class="ph">[ N ]</span></td></tr>
+        <tr><td>Y2</td><td><span class="ph">[ N ]</span></td><td><span class="ph">[ $X.XM ]</span></td><td><span class="ph">[ N ]</span></td></tr>
+        <tr><td>Y3</td><td><span class="ph">[ N ]</span></td><td><span class="ph">[ $XM ]</span></td><td><span class="ph">[ N ]</span></td></tr>
+      </tbody>
+    </table>
+    <h4 style="margin-top:26px;color:var(--muted);font-size:13px;letter-spacing:.06em;font-weight:700">USE OF FUNDS <span class="ph">[ illustrative — set your own split ]</span></h4>
+    <div class="bars">
+      <div class="bar"><span>Engineering &amp; product</span><div class="track"><div class="fill" style="width:45%"></div></div><span class="pct">45%</span></div>
+      <div class="bar"><span>GTM &amp; design partners</span><div class="track"><div class="fill g" style="width:30%"></div></div><span class="pct">30%</span></div>
+      <div class="bar"><span>Domain &amp; data</span><div class="track"><div class="fill" style="width:15%"></div></div><span class="pct">15%</span></div>
+      <div class="bar"><span>G&amp;A / compliance</span><div class="track"><div class="fill" style="width:10%"></div></div><span class="pct">10%</span></div>
+    </div>
+    <div class="note"><b>Milestones this round unlocks:</b> <span class="ph">[ e.g. 3 reference customers in payments → $1M ARR → Series A metrics ]</span>.</div>
+  </section>
+
+  <div class="foot">
+    <p style="color:var(--muted)">The companies that win with agents won't have better models. They'll have <span class="gold">better knowledge</span>.</p>
+    <p style="margin-top:8px">Veritgraph · <span class="ph">[ founders@veritgraph.ai ]</span> · <span class="ph">[ veritgraph.ai ]</span> · Confidential</p>
+  </div>
+</main>
+
+<script>
+  var p=document.getElementById('progress');
+  function upd(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;
+    p.style.width=(max>0?(h.scrollTop||document.body.scrollTop)/max*100:0)+'%';}
+  document.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);upd();
+</script>
+</body>
+</html>

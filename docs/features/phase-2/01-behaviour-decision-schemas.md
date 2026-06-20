@@ -84,9 +84,11 @@ sequenced first.
 
 ## 4. Applied decisions
 
-> **No `docs/phase-2/decisions.md` exists yet.** Per the flesh-out brief this is noted, not
-> fabricated. The decisions below carry forward from Phase 1 / accepted ADRs and bind unchanged;
-> genuinely new Phase 2 choices are raised in §11.
+> Phase 2 decisions are locked in [`docs/phase-2/decisions.md`](../../phase-2/decisions.md). The new
+> choices this feature raised are now ratified there: **D-P2.2** (conditional/cardinality rules live in
+> the cardinality/quality layer, not JSON Schema), **D-P2.3** (Command = `DomainConcept
+> conceptType=command`), **D-P2.4** (two grouped relationship files with a `kind` enum). The decisions
+> below also carry forward from Phase 1 / accepted ADRs and bind unchanged.
 
 | Decision | How it constrains this feature |
 |---|---|

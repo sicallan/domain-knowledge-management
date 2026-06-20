@@ -56,8 +56,10 @@ distinguished. It adds a projector and an export consumer — **no engine change
 
 ## 4. Applied decisions
 
-> No `docs/phase-2/decisions.md` is locked yet (noted, not fabricated). Carried-forward decisions and
-> accepted ADRs bind; new questions in §11.
+> Phase 2 decisions are locked in [`docs/phase-2/decisions.md`](../../phase-2/decisions.md). The 2.4
+> diagram form (PlantUML **activity** diagram; additive `BehaviourFlowView` output) is recorded under
+> "Deferred to their own feature" — finalise it here. Carried-forward Phase 1 decisions and accepted
+> ADRs also bind; §11 holds residual risks.
 
 | Decision | How it constrains this feature |
 |---|---|

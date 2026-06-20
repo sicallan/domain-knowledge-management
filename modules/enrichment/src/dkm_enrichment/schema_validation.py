@@ -26,6 +26,9 @@ from dkm_enrichment.models import RELATIONSHIP_TYPE
 
 # The 2.1 grouped relationship schemas (each a single file with a ``kind`` enum, D-P2.4).
 BEHAVIOURAL_RELATIONSHIP_SCHEMA_ID = "https://dkm.dev/schemas/relationships/behavioural.schema.json"
+DECISION_SPECIFIC_RELATIONSHIP_SCHEMA_ID = (
+    "https://dkm.dev/schemas/relationships/decision-specific.schema.json"
+)
 
 
 def find_schemas_dir(start: Path | None = None) -> Path:
@@ -148,6 +151,33 @@ class SchemaValidator:
             "targetType": target_type,
         }
         return self.validate_against_schema_id(BEHAVIOURAL_RELATIONSHIP_SCHEMA_ID, edge)
+
+    def validate_decision_relationship(
+        self, relationship_type: str, source_type: str, target_type: str
+    ) -> ValidationOutcome:
+        """Validate a decision edge's endpoint types against ``decision-specific.schema.json``.
+
+        Mirrors :meth:`validate_behavioural_relationship`: the intermediate JSONL relationship
+        form (``sourceEntityId`` / ``targetEntityId``) is validated structurally elsewhere; here we
+        check that the edge's endpoint *inventory types* satisfy the 2.1
+        ``{sourceType, targetType}`` constraints for its ``relationshipType`` (e.g. ``evaluates``
+        must go ``Decision → Rule|BusinessInvariant``, ``triggeredBy`` ``Event|Step → Decision``).
+        The ``evaluates ≥ 1`` / ``produces ≥ 1`` / ``automated ⇒ triggeredBy`` *count* rules cannot
+        be expressed in a single-edge schema and are enforced separately by the emit gate (D-P2.2).
+        """
+
+        edge = {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "type": RELATIONSHIP_TYPE,
+            "relationshipType": relationship_type,
+            "sourceId": "source",
+            "targetId": "target",
+            "version": "1.0.0",
+            "evidencedBy": [{"source": "extraction", "fetchedAt": "1970-01-01T00:00:00.000Z"}],
+            "sourceType": source_type,
+            "targetType": target_type,
+        }
+        return self.validate_against_schema_id(DECISION_SPECIFIC_RELATIONSHIP_SCHEMA_ID, edge)
 
     def validate_relationship_data(self, data: dict[str, Any]) -> ValidationOutcome:
         """Validate the spec 003 intermediate relationship payload shape."""

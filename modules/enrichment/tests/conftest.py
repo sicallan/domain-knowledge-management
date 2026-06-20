@@ -134,6 +134,19 @@ def behaviour_targets() -> list[str]:
     return [*PHASE_0A_L1_TYPES, *PHASE_2_BEHAVIOUR_TYPES]
 
 
+def decision_targets() -> list[str]:
+    """Targets for the Feature 03 decision pass.
+
+    The decision pass extracts ``Decision`` (already in ``PHASE_0A_L1_TYPES``) together with the
+    endpoint entities its six edges reach: ``Rule`` / ``ReferenceData`` / ``BusinessInvariant``
+    (structural) and ``Event`` / ``StateTransition`` / ``OrchestrationStep`` (behaviour, for
+    ``triggeredBy`` / ``produces``). That is the same additive union the behaviour pass uses — so
+    a single multi-pass run over the same documents can resolve decision↔behaviour cross-references.
+    """
+
+    return [*PHASE_0A_L1_TYPES, *PHASE_2_BEHAVIOUR_TYPES]
+
+
 @pytest.fixture
 def behaviour_config() -> ExtractionConfig:
     """An ``ExtractionConfig`` whose ``targetTypes`` include the behaviour pass types."""

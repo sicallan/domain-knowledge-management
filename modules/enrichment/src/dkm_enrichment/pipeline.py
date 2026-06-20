@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,8 @@ from dkm_enrichment.extraction_schemas import (
 from dkm_enrichment.gateway.base import LLMGateway
 from dkm_enrichment.models import (
     BEHAVIOURAL_RELATIONSHIP_TYPES,
+    DECISION_SPECIFIC_RELATIONSHIP_TYPES,
+    DECISION_TYPE,
     PHASE_2_BEHAVIOUR_TYPES,
     RELATIONSHIP_TYPE,
     CanonicalDocument,
@@ -309,81 +312,106 @@ class ExtractionPipeline:
             entitiesResolved=merged_count,
         )
         confidences: list[float] = []
-        emitted_ids: set[str] = set()
         # Endpoint-type lookup spans *all* built entities (including those the gates below
-        # exclude), so a behavioural edge can tell a wrong-typed endpoint apart from a
-        # cross-pass placeholder that was extracted but not committed.
+        # exclude), so an edge can tell a wrong-typed endpoint apart from a cross-pass
+        # placeholder that was extracted but not committed.
         entity_type_by_id = {entry.id: entry.type for entry in entities}
 
-        with JsonlWriter(extractions_path) as writer:
-            for entry in entities:
-                if not passes_gate(entry.confidence, config.confidenceThreshold):
-                    stats.belowThreshold += 1
+        # Stage A — entity gate: settle the committed set first, so the relationship and
+        # cardinality gates below can reason over the final entities before anything is written.
+        committed_entities: list[JsonlEntry] = []
+        emitted_ids: set[str] = set()
+        for entry in entities:
+            if not passes_gate(entry.confidence, config.confidenceThreshold):
+                stats.belowThreshold += 1
+                logger.info(
+                    "Excluded below-threshold entity %s (%.3f)", entry.id, entry.confidence
+                )
+                continue
+            outcome = self._validator.validate_entry(entry.type, entry.data)
+            if not outcome.valid:
+                stats.validationFailures += 1
+                logger.warning("Schema-invalid entity %s excluded: %s", entry.id, outcome.error)
+                continue
+            committed_entities.append(entry)
+            emitted_ids.add(entry.id)
+
+        # Stage B — relationship gate: behavioural quarantine (2.2), decision quarantine (2.3),
+        # then the Phase 1 structural endpoint check, then confidence + schema validation.
+        committed_relationships: list[JsonlEntry] = []
+        for entry in relationships:
+            rel_type = str(entry.data.get("relationshipType", ""))
+            source_id = str(entry.data.get("sourceEntityId", ""))
+            target_id = str(entry.data.get("targetEntityId", ""))
+            source_type = entity_type_by_id.get(source_id)
+            target_type = entity_type_by_id.get(target_id)
+            endpoints_committed = source_id in emitted_ids and target_id in emitted_ids
+
+            # An edge is governed by the behavioural endpoint gate only when it is a
+            # behavioural relationshipType *and* at least one endpoint is a Phase 2 behaviour
+            # entity. This keeps the overloaded `consumes` (Phase 1's Decision → ReferenceData)
+            # off the behavioural path.
+            if rel_type in BEHAVIOURAL_RELATIONSHIP_TYPES and (
+                source_type in PHASE_2_BEHAVIOUR_TYPES
+                or target_type in PHASE_2_BEHAVIOUR_TYPES
+            ):
+                # D-P2.5: quarantine (never commit as a dangling edge) when an endpoint is not
+                # committed — e.g. invokes → a not-yet-extracted Decision placeholder — or when
+                # the endpoint *types* violate behavioural.schema.json.
+                if not endpoints_committed or not (
+                    self._validator.validate_behavioural_relationship(
+                        rel_type, source_type or "", target_type or ""
+                    ).valid
+                ):
+                    stats.quarantined += 1
                     logger.info(
-                        "Excluded below-threshold entity %s (%.3f)",
-                        entry.id,
-                        entry.confidence,
+                        "Quarantined behavioural relationship %s (%s)", entry.id, rel_type
                     )
                     continue
-                outcome = self._validator.validate_entry(entry.type, entry.data)
-                if not outcome.valid:
-                    stats.validationFailures += 1
-                    logger.warning(
-                        "Schema-invalid entity %s excluded: %s", entry.id, outcome.error
+            # A decision-specific edge always has a Decision at one endpoint (e.g. evaluates
+            # Decision → Rule, triggeredBy Event/Step → Decision). That disambiguates the
+            # overloaded `consumes` from the behavioural one above. D-P2.5: a wrong-typed
+            # endpoint, or a cross-pass placeholder not committed (e.g. evaluates → a not-yet
+            # extracted Rule, realizedBy → a Phase 3 Service), is quarantined — never dangling.
+            elif rel_type in DECISION_SPECIFIC_RELATIONSHIP_TYPES and (
+                source_type == DECISION_TYPE or target_type == DECISION_TYPE
+            ):
+                if not endpoints_committed or not (
+                    self._validator.validate_decision_relationship(
+                        rel_type, source_type or "", target_type or ""
+                    ).valid
+                ):
+                    stats.quarantined += 1
+                    logger.info(
+                        "Quarantined decision relationship %s (%s)", entry.id, rel_type
                     )
                     continue
+            elif not endpoints_committed:
+                stats.validationFailures += 1
+                logger.info("Relationship %s dropped: endpoint not emitted", entry.id)
+                continue
+            if not passes_gate(entry.confidence, config.confidenceThreshold):
+                stats.belowThreshold += 1
+                continue
+            outcome = self._validator.validate_entry(RELATIONSHIP_TYPE, entry.data)
+            if not outcome.valid:
+                stats.validationFailures += 1
+                logger.warning("Invalid relationship %s excluded: %s", entry.id, outcome.error)
+                continue
+            committed_relationships.append(entry)
+
+        # Stage C — cardinality / conditional completeness gate over committed Decisions.
+        self._flag_cardinality(committed_entities, committed_relationships, stats)
+
+        # Stage D — write the settled sets to immutable JSONL.
+        with JsonlWriter(extractions_path) as writer:
+            for entry in committed_entities:
                 writer.write(entry)
-                emitted_ids.add(entry.id)
                 stats.entitiesExtracted += 1
                 confidences.append(entry.confidence)
 
         with JsonlWriter(relationships_path) as writer:
-            for entry in relationships:
-                rel_type = str(entry.data.get("relationshipType", ""))
-                source_id = str(entry.data.get("sourceEntityId", ""))
-                target_id = str(entry.data.get("targetEntityId", ""))
-                source_type = entity_type_by_id.get(source_id)
-                target_type = entity_type_by_id.get(target_id)
-
-                # An edge is governed by the behavioural endpoint gate only when it is a
-                # behavioural relationshipType *and* at least one endpoint is a Phase 2
-                # behaviour entity. This keeps the overloaded `consumes` (Phase 1's
-                # Decision → ReferenceData) on the structural path, untouched.
-                if rel_type in BEHAVIOURAL_RELATIONSHIP_TYPES and (
-                    source_type in PHASE_2_BEHAVIOUR_TYPES
-                    or target_type in PHASE_2_BEHAVIOUR_TYPES
-                ):
-                    # D-P2.5: quarantine (never commit as a dangling edge) when an endpoint is
-                    # not committed — e.g. invokes → a not-yet-extracted Decision placeholder —
-                    # or when the endpoint *types* violate behavioural.schema.json. (Both
-                    # endpoints being committed guarantees their types are non-None here.)
-                    endpoints_committed = (
-                        source_id in emitted_ids and target_id in emitted_ids
-                    )
-                    if not endpoints_committed or not (
-                        self._validator.validate_behavioural_relationship(
-                            rel_type, source_type or "", target_type or ""
-                        ).valid
-                    ):
-                        stats.quarantined += 1
-                        logger.info(
-                            "Quarantined behavioural relationship %s (%s)", entry.id, rel_type
-                        )
-                        continue
-                elif source_id not in emitted_ids or target_id not in emitted_ids:
-                    stats.validationFailures += 1
-                    logger.info("Relationship %s dropped: endpoint not emitted", entry.id)
-                    continue
-                if not passes_gate(entry.confidence, config.confidenceThreshold):
-                    stats.belowThreshold += 1
-                    continue
-                outcome = self._validator.validate_entry(RELATIONSHIP_TYPE, entry.data)
-                if not outcome.valid:
-                    stats.validationFailures += 1
-                    logger.warning(
-                        "Invalid relationship %s excluded: %s", entry.id, outcome.error
-                    )
-                    continue
+            for entry in committed_relationships:
                 writer.write(entry)
                 stats.relationshipsExtracted += 1
                 confidences.append(entry.confidence)
@@ -416,6 +444,65 @@ class ExtractionPipeline:
             model=model,
             escalated=config.escalate,
         )
+
+    def _flag_cardinality(
+        self,
+        entities: list[JsonlEntry],
+        relationships: list[JsonlEntry],
+        stats: ExtractionStats,
+    ) -> None:
+        """Flag committed Decisions that violate a Feature 01 cardinality/conditional rule.
+
+        The minimums are owned by the canonical ``RelationshipTypeRegistry``
+        (``modules/schema/src/relationships.ts``: ``evaluates`` ``minTargetsPerSource=1``,
+        ``produces`` ``minTargetsPerSource=1``, and ``checkAutomatedDecisionTrigger`` —
+        an ``automated`` Decision requires ≥ 1 ``triggeredBy``). The numbers are *not* reinvented
+        here: this Python emit gate is the **second** enforcement point (D-P2.2 "defined once,
+        enforced twice"; the load/link gate, Feature 05, is the other). A violator is flagged to
+        the review queue + counted — emitted but never auto-merged, never hard-dropped (D-P2.5 +
+        the D-P1.5 two-tier model). Cardinality is evaluated over the *committed* edges only, so a
+        quarantined edge cannot satisfy a minimum.
+        """
+
+        evaluates_by_source: Counter[str] = Counter()
+        produces_by_source: Counter[str] = Counter()
+        triggered_by_target: Counter[str] = Counter()
+        for rel in relationships:
+            rel_type = rel.data.get("relationshipType")
+            source_id = str(rel.data.get("sourceEntityId", ""))
+            target_id = str(rel.data.get("targetEntityId", ""))
+            if rel_type == "evaluates":
+                evaluates_by_source[source_id] += 1
+            elif rel_type == "produces":
+                produces_by_source[source_id] += 1
+            elif rel_type == "triggeredBy":
+                triggered_by_target[target_id] += 1
+
+        for entry in entities:
+            if entry.type != DECISION_TYPE:
+                continue
+            violations: list[str] = []
+            if evaluates_by_source[entry.id] < 1:
+                violations.append("evaluates>=1")
+            if produces_by_source[entry.id] < 1:
+                violations.append("produces>=1")
+            if (
+                entry.data.get("decisionType") == "automated"
+                and triggered_by_target[entry.id] < 1
+            ):
+                violations.append("automated=>triggeredBy>=1")
+            if not violations:
+                continue
+            stats.cardinalityFlagged += 1
+            metadata = dict(entry.metadata or {})
+            metadata["reviewQueue"] = "cardinality"
+            metadata["cardinalityViolations"] = violations
+            entry.metadata = metadata
+            logger.info(
+                "Flagged Decision %s for review (cardinality): %s",
+                entry.id,
+                ", ".join(violations),
+            )
 
     # ------------------------------------------------------------------ helpers
 

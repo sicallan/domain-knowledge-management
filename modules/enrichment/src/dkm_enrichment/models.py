@@ -43,6 +43,22 @@ BEHAVIOURAL_RELATIONSHIP_TYPES: tuple[str, ...] = (
     "invokes",
 )
 
+# The Decision inventory type — the highest-value node (Feature 03). Already a Phase 0a structural
+# target (``PHASE_0A_L1_TYPES``); named here so the decision pass and its gate can reference it.
+DECISION_TYPE = "Decision"
+
+# The decision-specific edge kinds (schemas/relationships/decision-specific.schema.json, 2.1).
+# Note ``consumes`` is shared with the behavioural set but is disambiguated at the emit gate by
+# its endpoints (a decision ``consumes`` always has a Decision source → ReferenceData target).
+DECISION_SPECIFIC_RELATIONSHIP_TYPES: tuple[str, ...] = (
+    "evaluates",
+    "consumes",
+    "constrainedBy",
+    "triggeredBy",
+    "produces",
+    "realizedBy",
+)
+
 RELATIONSHIP_TYPE = "Relationship"
 
 
@@ -177,9 +193,13 @@ class ExtractionStats(BaseModel):
     validationFailures: int = 0
     belowThreshold: int = 0
     # D-P2.5: edges whose endpoint is unresolved (cross-pass placeholder, e.g. invokes → a
-    # not-yet-extracted Decision) or whose endpoint types fail the behavioural schema are
-    # routed to the review queue and counted here — never committed as dangling edges.
+    # not-yet-extracted Decision) or whose endpoint types fail the behavioural/decision schema
+    # are routed to the review queue and counted here — never committed as dangling edges.
     quarantined: int = 0
+    # D-P2.2 + D-P2.5: committed Decisions that violate a Feature 01 cardinality/conditional rule
+    # (evaluates≥1, produces≥1, automated⇒triggeredBy) are flagged to the review queue and counted
+    # here — emitted but never auto-merged, never hard-dropped (the D-P1.5 two-tier model).
+    cardinalityFlagged: int = 0
     averageConfidence: float = 0.0
     duration: float = 0.0
 

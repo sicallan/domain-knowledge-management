@@ -1,0 +1,160 @@
+{
+  "id": "payments-decision-golden-v1",
+  "name": "Payments decision golden dataset (Phase 2.3)",
+  "documents": [
+    {
+      "id": "golden-card-auth-decisions",
+      "file": "documents/card-authorisation-decisions.md",
+      "sourcePath": "payments/card-authorisation-decisions.md",
+      "sourceAuthority": "scheme",
+      "title": "Card Authorisation Decisions"
+    },
+    {
+      "id": "golden-refund-decisions",
+      "file": "documents/refund-policy.md",
+      "sourcePath": "payments/refund-policy.md",
+      "sourceAuthority": "scheme",
+      "title": "Refund Decisions"
+    },
+    {
+      "id": "golden-settlement-decisions",
+      "file": "documents/settlement-decisions.md",
+      "sourcePath": "payments/settlement-decisions.md",
+      "sourceAuthority": "scheme",
+      "title": "Settlement Decisions"
+    }
+  ],
+  "expectedEntities": [
+    { "type": "Decision", "name": "Authorise Payment" },
+    { "type": "Decision", "name": "Score Transaction Risk" },
+    { "type": "Decision", "name": "Apply Card Block" },
+    { "type": "Decision", "name": "Approve Refund" },
+    { "type": "Decision", "name": "Select Settlement Route" },
+
+    { "type": "Rule", "name": "Available funds must cover the authorisation amount" },
+    { "type": "Rule", "name": "High aggregate scores indicate elevated fraud risk" },
+    { "type": "Rule", "name": "Block the card after three consecutive CVV failures" },
+    { "type": "Rule", "name": "Refunds within the dispute window are eligible" },
+    { "type": "Rule", "name": "Net settlement applies when scheme rules permit" },
+
+    { "type": "ReferenceData", "name": "Card Status Reference" },
+    { "type": "ReferenceData", "name": "Fraud Signal Dataset" },
+    { "type": "ReferenceData", "name": "Original Payment Reference" },
+    { "type": "ReferenceData", "name": "Scheme Fee Table" },
+
+    { "type": "BusinessInvariant", "name": "An authorisation must never exceed the available balance" },
+    { "type": "BusinessInvariant", "name": "A blocked card must not authorise further payments" },
+
+    { "type": "Event", "name": "AuthorisationRequested" },
+    { "type": "Event", "name": "PaymentAuthorised" },
+    { "type": "Event", "name": "HighRiskScored" },
+    { "type": "Event", "name": "CvvFailureThresholdReached" },
+    { "type": "Event", "name": "CardBlocked" },
+    { "type": "Event", "name": "RefundApproved" },
+    { "type": "Event", "name": "ClearingWindowClosed" },
+    { "type": "Event", "name": "SettlementRouteSelected" },
+
+    { "type": "OrchestrationStep", "name": "Score Risk" }
+  ],
+  "expectedRelationships": [
+    { "relationshipType": "triggeredBy", "sourceName": "AuthorisationRequested", "targetName": "Authorise Payment" },
+    { "relationshipType": "triggeredBy", "sourceName": "Score Risk", "targetName": "Score Transaction Risk" },
+    { "relationshipType": "triggeredBy", "sourceName": "CvvFailureThresholdReached", "targetName": "Apply Card Block" },
+    { "relationshipType": "triggeredBy", "sourceName": "ClearingWindowClosed", "targetName": "Select Settlement Route" },
+
+    { "relationshipType": "evaluates", "sourceName": "Authorise Payment", "targetName": "Available funds must cover the authorisation amount" },
+    { "relationshipType": "evaluates", "sourceName": "Score Transaction Risk", "targetName": "High aggregate scores indicate elevated fraud risk" },
+    { "relationshipType": "evaluates", "sourceName": "Apply Card Block", "targetName": "Block the card after three consecutive CVV failures" },
+    { "relationshipType": "evaluates", "sourceName": "Approve Refund", "targetName": "Refunds within the dispute window are eligible" },
+    { "relationshipType": "evaluates", "sourceName": "Select Settlement Route", "targetName": "Net settlement applies when scheme rules permit" },
+
+    { "relationshipType": "consumes", "sourceName": "Authorise Payment", "targetName": "Card Status Reference" },
+    { "relationshipType": "consumes", "sourceName": "Score Transaction Risk", "targetName": "Fraud Signal Dataset" },
+    { "relationshipType": "consumes", "sourceName": "Approve Refund", "targetName": "Original Payment Reference" },
+    { "relationshipType": "consumes", "sourceName": "Select Settlement Route", "targetName": "Scheme Fee Table" },
+
+    { "relationshipType": "constrainedBy", "sourceName": "Authorise Payment", "targetName": "An authorisation must never exceed the available balance" },
+    { "relationshipType": "constrainedBy", "sourceName": "Apply Card Block", "targetName": "A blocked card must not authorise further payments" },
+
+    { "relationshipType": "produces", "sourceName": "Authorise Payment", "targetName": "PaymentAuthorised" },
+    { "relationshipType": "produces", "sourceName": "Score Transaction Risk", "targetName": "HighRiskScored" },
+    { "relationshipType": "produces", "sourceName": "Apply Card Block", "targetName": "CardBlocked" },
+    { "relationshipType": "produces", "sourceName": "Approve Refund", "targetName": "RefundApproved" },
+    { "relationshipType": "produces", "sourceName": "Select Settlement Route", "targetName": "SettlementRouteSelected" },
+
+    { "relationshipType": "realizedBy", "sourceName": "Authorise Payment", "targetName": "Authorisation Service" },
+    { "relationshipType": "realizedBy", "sourceName": "Score Transaction Risk", "targetName": "Risk Service" },
+    { "relationshipType": "realizedBy", "sourceName": "Select Settlement Route", "targetName": "Settlement Service" }
+  ],
+  "extractionScript": {
+    "golden-card-auth-decisions": {
+      "Card Authorisation Decisions": {
+        "entities": [
+          { "type": "Decision", "name": "Authorise Payment", "decisionType": "automated", "inputs": ["available balance", "card status"], "outcomes": ["approve", "decline", "refer"], "owner": "Authorisation Team", "confidence": 0.92 },
+          { "type": "Decision", "name": "Score Transaction Risk", "decisionType": "automated", "inputs": ["transaction features"], "outcomes": ["low", "medium", "high"], "owner": "Risk Team", "confidence": 0.92 },
+          { "type": "Decision", "name": "Apply Card Block", "decisionType": "automated", "outcomes": ["block", "allow"], "owner": "Fraud Team", "confidence": 0.92 },
+          { "type": "Rule", "expression": "Available funds must cover the authorisation amount", "ruleType": "validation", "confidence": 0.92 },
+          { "type": "Rule", "expression": "High aggregate scores indicate elevated fraud risk", "ruleType": "decision", "confidence": 0.92 },
+          { "type": "Rule", "expression": "Block the card after three consecutive CVV failures", "ruleType": "decision", "confidence": 0.92 },
+          { "type": "ReferenceData", "name": "Card Status Reference", "owner": "Card Ops", "confidence": 0.92 },
+          { "type": "ReferenceData", "name": "Fraud Signal Dataset", "owner": "Risk Team", "confidence": 0.92 },
+          { "type": "BusinessInvariant", "statement": "An authorisation must never exceed the available balance", "severity": "high", "scope": "context-specific", "confidence": 0.92 },
+          { "type": "BusinessInvariant", "statement": "A blocked card must not authorise further payments", "severity": "high", "scope": "context-specific", "confidence": 0.92 },
+          { "type": "Event", "name": "AuthorisationRequested", "eventType": "integration", "confidence": 0.92 },
+          { "type": "Event", "name": "PaymentAuthorised", "eventType": "domain", "confidence": 0.92 },
+          { "type": "Event", "name": "HighRiskScored", "eventType": "domain", "confidence": 0.92 },
+          { "type": "Event", "name": "CvvFailureThresholdReached", "eventType": "integration", "confidence": 0.92 },
+          { "type": "Event", "name": "CardBlocked", "eventType": "domain", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Score Risk", "sequence": 0, "actionType": "evaluate-decision", "confidence": 0.92 }
+        ],
+        "relationships": [
+          { "type": "triggeredBy", "source": "AuthorisationRequested", "target": "Authorise Payment", "confidence": 0.9 },
+          { "type": "evaluates", "source": "Authorise Payment", "target": "Available funds must cover the authorisation amount", "confidence": 0.9 },
+          { "type": "consumes", "source": "Authorise Payment", "target": "Card Status Reference", "confidence": 0.9 },
+          { "type": "constrainedBy", "source": "Authorise Payment", "target": "An authorisation must never exceed the available balance", "confidence": 0.9 },
+          { "type": "produces", "source": "Authorise Payment", "target": "PaymentAuthorised", "confidence": 0.9 },
+          { "type": "triggeredBy", "source": "Score Risk", "target": "Score Transaction Risk", "confidence": 0.9 },
+          { "type": "evaluates", "source": "Score Transaction Risk", "target": "High aggregate scores indicate elevated fraud risk", "confidence": 0.9 },
+          { "type": "consumes", "source": "Score Transaction Risk", "target": "Fraud Signal Dataset", "confidence": 0.9 },
+          { "type": "produces", "source": "Score Transaction Risk", "target": "HighRiskScored", "confidence": 0.9 },
+          { "type": "triggeredBy", "source": "CvvFailureThresholdReached", "target": "Apply Card Block", "confidence": 0.9 },
+          { "type": "evaluates", "source": "Apply Card Block", "target": "Block the card after three consecutive CVV failures", "confidence": 0.9 },
+          { "type": "constrainedBy", "source": "Apply Card Block", "target": "A blocked card must not authorise further payments", "confidence": 0.9 },
+          { "type": "produces", "source": "Apply Card Block", "target": "CardBlocked", "confidence": 0.9 }
+        ]
+      }
+    },
+    "golden-refund-decisions": {
+      "Refund Decisions": {
+        "entities": [
+          { "type": "Decision", "name": "Approve Refund", "decisionType": "hybrid", "inputs": ["original payment", "dispute window"], "outcomes": ["approve", "reject", "escalate"], "owner": "Payments Ops", "confidence": 0.92 },
+          { "type": "Rule", "expression": "Refunds within the dispute window are eligible", "ruleType": "decision", "confidence": 0.92 },
+          { "type": "ReferenceData", "name": "Original Payment Reference", "owner": "Payments Ops", "confidence": 0.92 },
+          { "type": "Event", "name": "RefundApproved", "eventType": "domain", "confidence": 0.92 }
+        ],
+        "relationships": [
+          { "type": "evaluates", "source": "Approve Refund", "target": "Refunds within the dispute window are eligible", "confidence": 0.9 },
+          { "type": "consumes", "source": "Approve Refund", "target": "Original Payment Reference", "confidence": 0.9 },
+          { "type": "produces", "source": "Approve Refund", "target": "RefundApproved", "confidence": 0.9 }
+        ]
+      }
+    },
+    "golden-settlement-decisions": {
+      "Settlement Decisions": {
+        "entities": [
+          { "type": "Decision", "name": "Select Settlement Route", "decisionType": "automated", "inputs": ["scheme rules", "fee table"], "outcomes": ["net", "gross"], "owner": "Settlement Ops", "confidence": 0.92 },
+          { "type": "Rule", "expression": "Net settlement applies when scheme rules permit", "ruleType": "decision", "confidence": 0.92 },
+          { "type": "ReferenceData", "name": "Scheme Fee Table", "owner": "Settlement Ops", "confidence": 0.92 },
+          { "type": "Event", "name": "ClearingWindowClosed", "eventType": "integration", "confidence": 0.92 },
+          { "type": "Event", "name": "SettlementRouteSelected", "eventType": "domain", "confidence": 0.92 }
+        ],
+        "relationships": [
+          { "type": "triggeredBy", "source": "ClearingWindowClosed", "target": "Select Settlement Route", "confidence": 0.9 },
+          { "type": "evaluates", "source": "Select Settlement Route", "target": "Net settlement applies when scheme rules permit", "confidence": 0.9 },
+          { "type": "consumes", "source": "Select Settlement Route", "target": "Scheme Fee Table", "confidence": 0.9 },
+          { "type": "produces", "source": "Select Settlement Route", "target": "SettlementRouteSelected", "confidence": 0.9 }
+        ]
+      }
+    }
+  }
+}

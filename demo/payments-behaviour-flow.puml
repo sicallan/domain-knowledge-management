@@ -1,0 +1,53 @@
+@startuml payments-behaviour-flow
+title Payments — Behaviour & Decisions · Phase 2 extraction (behaviour pass 2.2 + decision pass 2.3)
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+left to right direction
+legend right
+  Phase 1 builds the static domain map; Phase 2 adds runtime <b>behaviour</b> and
+  first-class <b>Decisions</b>. Gold hexagons are Decisions (the highest-value nodes);
+  bold amber arrows are decision-sourced edges (its traceability).
+  Blue boxes = steps · yellow ovals = events · purple = state transitions.
+endlegend
+
+rectangle "Card Authorisation Flow" as b_flow_authorisation <<Flow>> #B0BEC5
+rectangle "Validate Card\n#0 «validate»" as b_step_validate <<Step>> #C5CAE9
+rectangle "Check Funds\n#1 «invoke-service»" as b_step_checkfunds <<Step>> #C5CAE9
+rectangle "Score Risk\n#2 «evaluate-decision»" as b_step_score <<Step>> #C5CAE9
+rectangle "Authorise\n#3 «evaluate-decision»" as b_step_authorise <<Step>> #C5CAE9
+rectangle "Publish Outcome\n#4 «publish-event»" as b_step_publish <<Step>> #C5CAE9
+usecase "AuthorisationRequested\n«integration»" as b_evt_auth_requested <<Event>> #FFE082
+hexagon "Score Transaction Risk\n«automated»  Approve / Challenge / Decline" as b_d_score_risk <<Decision>> #FFD54F
+usecase "HighRiskScored\n«domain»" as b_evt_high_risk <<Event>> #FFE082
+hexagon "Authorise Payment\n«automated»  Approved / Declined" as b_d_authorise <<Decision>> #FFD54F
+usecase "PaymentAuthorised\n«domain»" as b_evt_payment_authorised <<Event>> #FFE082
+rectangle "Payment authorised\npending → authorised" as b_st_payment_authorised <<StateTransition>> #B39DDB
+card "Risk Score Table\nowner: Risk Modelling" as b_ref_risk_score <<ReferenceData>> #FFAB91
+card "Fraud Blocklist\nowner: Fraud Operations" as b_ref_fraud_blocklist <<ReferenceData>> #FFAB91
+rectangle "Card not expired\ncard.expiry > authorisedAt" as b_rule_card_expiry <<Rule>> #A5D6A7
+rectangle "Authorisation within available balance\nauthorisedAmount <= cardholder.availableBalance" as b_inv_auth_balance <<BusinessInvariant>> #CE93D8
+card "Card Status Reference\nowner: Card Operations" as b_ref_card_status <<ReferenceData>> #FFAB91
+
+b_step_validate -[#90A4AE,dashed]-> b_step_checkfunds : then
+b_step_checkfunds -[#90A4AE,dashed]-> b_step_score : then
+b_step_score -[#90A4AE,dashed]-> b_step_authorise : then
+b_step_authorise -[#90A4AE,dashed]-> b_step_publish : then
+
+b_evt_auth_requested -[#5C6BC0]-> b_flow_authorisation : triggers
+b_step_score -[#5C6BC0]-> b_d_score_risk : invokes
+b_step_score -[#5C6BC0]-> b_evt_high_risk : emits
+b_step_score -[#5C6BC0]-> b_d_score_risk : triggeredBy
+b_step_authorise -[#5C6BC0]-> b_d_authorise : invokes
+b_step_publish -[#5C6BC0]-> b_evt_payment_authorised : emits
+b_step_publish -[#5C6BC0]-> b_st_payment_authorised : transitionsTo
+b_evt_auth_requested -[#5C6BC0]-> b_d_authorise : triggeredBy
+b_d_authorise -[#F57F17,bold]-> b_d_score_risk : triggers
+b_d_score_risk -[#F57F17,bold]-> b_ref_risk_score : consumes
+b_d_score_risk -[#F57F17,bold]-> b_ref_fraud_blocklist : consumes
+b_d_score_risk -[#F57F17,bold]-> b_evt_high_risk : produces
+b_d_authorise -[#F57F17,bold]-> b_rule_card_expiry : evaluates
+b_d_authorise -[#F57F17,bold]-> b_inv_auth_balance : constrainedBy
+b_d_authorise -[#F57F17,bold]-> b_evt_payment_authorised : produces
+b_d_authorise -[#F57F17,bold]-> b_st_payment_authorised : produces
+b_d_authorise -[#F57F17,bold]-> b_ref_card_status : consumes
+@enduml

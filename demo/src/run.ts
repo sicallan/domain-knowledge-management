@@ -11,20 +11,26 @@ import type { ConnectorRegistry, IngestionResult, SourceConfig } from "@dkm/sour
 import { DefaultViewEngine, DomainMapProjector } from "@dkm/view-projection";
 import type { DomainMapView } from "@dkm/view-projection";
 import { collectContextDetail, formatDomainMapTree, renderDomainMap } from "./domain-map-exporter";
+import {
+  collectBehaviourSubgraph,
+  renderBehaviourFlow,
+  summariseBehaviour,
+} from "./behaviour-flow-exporter";
 
 /**
- * One-command Payments demo (the visible end of the Phase 1 slice). It runs the **real**
- * pipeline end to end:
+ * One-command Payments demo. It runs the **real** pipeline end to end:
  *
  *   sources → [connectors] → CanonicalDocuments → [extraction, captured] → intermediate JSONL
- *           → [GraphLoader] → graph → [Query Interface] → [View Projection Engine] → Domain Map
+ *           → [GraphLoader] → graph → [Query Interface] → [View Projection Engine] → views
  *
  * Two source formats — Markdown docs and a structured JSON export — are ingested through the
  * **same connector registry** (filesystem + json), proving the Open-Closed boundary: a new
- * source format is one registration line, no pipeline edits. The projected `DomainMapView` is
- * shown both as the UI-ready structure (printed + written to JSON) and rendered as a
- * decisions-first PlantUML diagram. Deterministic: extraction is pre-captured, so there is no
- * live LLM, no secret and no external service (PNG render is best-effort via the PlantUML image).
+ * source format is one registration line, no pipeline edits. From the graph it then renders two
+ * pictures: the **Phase 1 Domain Map** (static L1 structure, projected by the View Projection
+ * Engine) and the **Phase 2 Behaviour & Decisions** flow (the orchestration flow its behaviour
+ * pass extracts, plus the decisions its steps invoke with their full traceability — read back
+ * through the Query Interface). Deterministic: extraction is pre-captured, so there is no live
+ * LLM, no secret and no external service (PNG render is best-effort via the PlantUML image).
  */
 
 const demoDir = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -36,6 +42,8 @@ const RELATIONSHIPS = join(demoDir, "payments-relationships.jsonl");
 const PUML = "payments-domain-map.puml";
 const PNG = "payments-domain-map.png";
 const VIEW_JSON = "payments-domain-map.json";
+const BEHAVIOUR_PUML = "payments-behaviour-flow.puml";
+const BEHAVIOUR_PNG = "payments-behaviour-flow.png";
 
 const CONTEXT: QueryContext = {
   userId: "demo",
@@ -131,21 +139,40 @@ async function main(): Promise<void> {
   writeFileSync(join(demoDir, PUML), `${puml}\n`, "utf8");
   console.log(`▶ Wrote demo/${PUML}`);
 
-  try {
-    execFileSync(
-      "docker",
-      ["run", "--rm", "-v", `${demoDir}:/work`, "-w", "/work", "plantuml/plantuml", "-tpng", PUML],
-      { stdio: "inherit" },
-    );
-    console.log(`▶ Rendered demo/${PNG}`);
-  } catch {
+  renderPng(PUML, PNG);
+
+  // 6 — Phase 2: the behaviour + decision layer, read back through the same Query Interface.
+  console.log("▶ Phase 2 — Behaviour & Decisions (behaviour pass 2.2 + decision pass 2.3):");
+  const behaviour = await collectBehaviourSubgraph(service);
+  if (behaviour) {
+    console.log(`  ${summariseBehaviour(behaviour)}`);
+    writeFileSync(join(demoDir, BEHAVIOUR_PUML), `${renderBehaviourFlow(behaviour)}\n`, "utf8");
     console.log(
-      `ℹ Skipped PNG render (Docker / plantuml image unavailable). ` +
-        `Render demo/${PUML} at https://www.plantuml.com/plantuml or with the plantuml CLI.`,
+      `▶ Wrote demo/${BEHAVIOUR_PUML} (the Card Authorisation flow + its decisions' traceability)`,
     );
+    renderPng(BEHAVIOUR_PUML, BEHAVIOUR_PNG);
+  } else {
+    console.log("  (no orchestration flows in the graph — nothing to render)");
   }
 
   console.log("✓ Demo complete.");
+}
+
+/** Best-effort PlantUML → PNG render via the public plantuml Docker image (skips if unavailable). */
+function renderPng(puml: string, png: string): void {
+  try {
+    execFileSync(
+      "docker",
+      ["run", "--rm", "-v", `${demoDir}:/work`, "-w", "/work", "plantuml/plantuml", "-tpng", puml],
+      { stdio: "inherit" },
+    );
+    console.log(`▶ Rendered demo/${png}`);
+  } catch {
+    console.log(
+      `ℹ Skipped PNG render (Docker / plantuml image unavailable). ` +
+        `Render demo/${puml} at https://www.plantuml.com/plantuml or with the plantuml CLI.`,
+    );
+  }
 }
 
 main().catch((error: unknown) => {

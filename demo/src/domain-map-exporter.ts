@@ -171,6 +171,7 @@ export function renderDomainMap(view: DomainMapView, detail: ContextDetail): str
     "",
   ];
 
+  const declared = new Set<string>();
   for (const subdomain of view.subdomains) {
     lines.push(`package "${escapeLabel(subdomain.name)}  «subdomain»" as ${alias(subdomain.id)} {`);
     for (const context of subdomain.contexts) {
@@ -184,6 +185,7 @@ export function renderDomainMap(view: DomainMapView, detail: ContextDetail): str
         const extra = nodeDetail(node);
         const label = escapeLabel(extra ? `${nodeName(node)}\\n${extra}` : nodeName(node));
         lines.push(`    ${style.shape} "${label}" as ${alias(node.id)} <<${style.stereotype}>> ${style.colour}`);
+        declared.add(node.id);
       }
       lines.push("  }");
     }
@@ -191,8 +193,11 @@ export function renderDomainMap(view: DomainMapView, detail: ContextDetail): str
     lines.push("");
   }
 
-  // Relationships between members — decision-sourced edges emphasised (bold amber).
+  // Relationships between declared members — decision-sourced edges emphasised (bold amber).
+  // Edges to non-member endpoints (e.g. the Phase 2 behaviour nodes a decision `produces`) are
+  // the Behaviour Flow picture's job; the Domain Map stays the static L1 structure.
   for (const edge of detail.edges) {
+    if (!declared.has(edge.sourceId) || !declared.has(edge.targetId)) continue;
     const arrow = detail.decisionIds.has(edge.sourceId) ? "-[#F57F17,bold]->" : "-->";
     lines.push(`${alias(edge.sourceId)} ${arrow} ${alias(edge.targetId)} : ${edge.relationshipType}`);
   }

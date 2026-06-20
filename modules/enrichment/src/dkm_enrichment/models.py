@@ -23,6 +23,26 @@ PHASE_0A_L1_TYPES: tuple[str, ...] = (
     "ReferenceData",
 )
 
+# The L3 behaviour types added by the Phase 2.2 behavioural pass (feature 02). Additive: these
+# extend the available extraction ``targetTypes`` without modifying ``PHASE_0A_L1_TYPES`` (OCP).
+# ``Decision`` is deliberately **not** here — it stays a structural target owned by Feature 03.
+PHASE_2_BEHAVIOUR_TYPES: tuple[str, ...] = (
+    "OrchestrationFlow",
+    "OrchestrationStep",
+    "Event",
+    "StateTransition",
+)
+
+# The behavioural edge kinds (schemas/relationships/behavioural.schema.json, shipped in 2.1).
+BEHAVIOURAL_RELATIONSHIP_TYPES: tuple[str, ...] = (
+    "triggers",
+    "emits",
+    "consumes",
+    "transitionsTo",
+    "compensates",
+    "invokes",
+)
+
 RELATIONSHIP_TYPE = "Relationship"
 
 
@@ -156,6 +176,10 @@ class ExtractionStats(BaseModel):
     entitiesResolved: int = 0
     validationFailures: int = 0
     belowThreshold: int = 0
+    # D-P2.5: edges whose endpoint is unresolved (cross-pass placeholder, e.g. invokes → a
+    # not-yet-extracted Decision) or whose endpoint types fail the behavioural schema are
+    # routed to the review queue and counted here — never committed as dangling edges.
+    quarantined: int = 0
     averageConfidence: float = 0.0
     duration: float = 0.0
 

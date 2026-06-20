@@ -26,6 +26,11 @@ TYPE_TEMPLATE_NAMES: dict[str, str] = {
     "BusinessInvariant": "business-invariant",
     "BusinessCapability": "business-capability",
     "ReferenceData": "reference-data",
+    # Phase 2.2 behaviour pass (feature 02) — registered additively alongside their L3 schemas.
+    "OrchestrationFlow": "orchestration-flow",
+    "OrchestrationStep": "orchestration-step",
+    "Event": "event",
+    "StateTransition": "state-transition",
 }
 
 

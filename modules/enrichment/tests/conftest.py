@@ -17,7 +17,14 @@ import pytest
 
 from dkm_enrichment.entity_resolution import normalise_name
 from dkm_enrichment.gateway.base import ENTITY_RESULT_TITLE, RELATIONSHIP_RESULT_TITLE
-from dkm_enrichment.models import CanonicalDocument, DocumentSection, LLMOptions
+from dkm_enrichment.models import (
+    PHASE_0A_L1_TYPES,
+    PHASE_2_BEHAVIOUR_TYPES,
+    CanonicalDocument,
+    DocumentSection,
+    ExtractionConfig,
+    LLMOptions,
+)
 
 Router = Callable[[str, dict[str, Any], LLMOptions], dict[str, Any]]
 
@@ -116,6 +123,140 @@ def payments_document() -> CanonicalDocument:
             ),
         ],
     )
+
+
+# --------------------------------------------------------------------------- behaviour pass
+
+
+def behaviour_targets() -> list[str]:
+    """The Phase 1 structural targets plus the four Phase 2 behaviour types (additive)."""
+
+    return [*PHASE_0A_L1_TYPES, *PHASE_2_BEHAVIOUR_TYPES]
+
+
+@pytest.fixture
+def behaviour_config() -> ExtractionConfig:
+    """An ``ExtractionConfig`` whose ``targetTypes`` include the behaviour pass types."""
+
+    return ExtractionConfig(targetTypes=behaviour_targets())
+
+
+@pytest.fixture
+def behaviour_document() -> CanonicalDocument:
+    """A self-contained process document describing one orchestration flow.
+
+    A single section keeps every endpoint of the behavioural edges co-located in one chunk,
+    so the relationship roster resolves them (the pipeline builds edges per chunk).
+    """
+
+    return CanonicalDocument(
+        id="doc-auth-flow",
+        sourceType="filesystem",
+        sourcePath="payments/authorisation-flow.md",
+        sourceVersion="1",
+        fetchedAt="2026-01-01T00:00:00.000Z",
+        sourceAuthority="scheme",
+        content="(sections carry the content)",
+        title="Authorisation Flow Runbook",
+        sections=[
+            DocumentSection(
+                id="s1",
+                title="Authorisation Flow",
+                content=(
+                    "The Authorisation Flow is triggered by the AuthorisationRequested event. "
+                    "Step 1 Validate Card. Step 2 Score Risk. Step 3 Publish Result emits the "
+                    "AuthorisationCompleted event and moves the authorisation from pending to "
+                    "authorised."
+                ),
+                level=1,
+            ),
+        ],
+    )
+
+
+@pytest.fixture
+def behaviour_script() -> dict[str, dict[str, dict[str, Any]]]:
+    """A deterministic behaviour-extraction script for :func:`behaviour_document`."""
+
+    return {
+        "doc-auth-flow": {
+            "Authorisation Flow": {
+                "entities": [
+                    {
+                        "type": "OrchestrationFlow",
+                        "name": "Authorisation Flow",
+                        "trigger": "AuthorisationRequested",
+                        "owningService": "Authorisation Service",
+                        "steps": ["Validate Card", "Score Risk", "Publish Result"],
+                        "confidence": 0.92,
+                    },
+                    {
+                        "type": "OrchestrationStep",
+                        "name": "Validate Card",
+                        "sequence": 0,
+                        "actionType": "validate",
+                        "confidence": 0.92,
+                    },
+                    {
+                        "type": "OrchestrationStep",
+                        "name": "Score Risk",
+                        "sequence": 1,
+                        "actionType": "evaluate-decision",
+                        "confidence": 0.92,
+                    },
+                    {
+                        "type": "OrchestrationStep",
+                        "name": "Publish Result",
+                        "sequence": 2,
+                        "actionType": "publish-event",
+                        "confidence": 0.92,
+                    },
+                    {
+                        "type": "Event",
+                        "name": "AuthorisationRequested",
+                        "eventType": "integration",
+                        "confidence": 0.92,
+                    },
+                    {
+                        "type": "Event",
+                        "name": "AuthorisationCompleted",
+                        "eventType": "domain",
+                        "emitter": "Authorisation Service",
+                        "confidence": 0.92,
+                    },
+                    {
+                        "type": "StateTransition",
+                        "name": "Authorisation completed",
+                        "entity": "Authorisation",
+                        "fromState": "pending",
+                        "toState": "authorised",
+                        "trigger": "AuthorisationCompleted",
+                        "confidence": 0.92,
+                    },
+                ],
+                "relationships": [
+                    {
+                        "type": "triggers",
+                        "source": "AuthorisationRequested",
+                        "target": "Authorisation Flow",
+                        "confidence": 0.9,
+                    },
+                    {
+                        "type": "emits",
+                        "source": "Publish Result",
+                        "target": "AuthorisationCompleted",
+                        "confidence": 0.9,
+                    },
+                    {
+                        "type": "transitionsTo",
+                        "source": "Publish Result",
+                        "target": "Authorisation completed",
+                        "confidence": 0.9,
+                    },
+                ],
+            }
+        }
+    }
 
 
 @pytest.fixture

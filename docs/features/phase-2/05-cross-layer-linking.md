@@ -60,8 +60,11 @@ constraints from [plan.md §Relationship Cardinality](../../../plan.md).
 
 ## 4. Applied decisions
 
-> No `docs/phase-2/decisions.md` is locked yet (noted, not fabricated). Carried-forward decisions and
-> accepted ADRs bind; new questions in §11.
+> Phase 2 decisions are locked in [`docs/phase-2/decisions.md`](../../phase-2/decisions.md). Binding
+> here: **D-P2.2** (cardinality enforced at load/link time too, one shared rule set), **D-P2.5**
+> (quarantine invalid/dangling edges to the review queue, never drop or commit dangling), and the
+> "Deferred to their own feature" note on L2 endpoints (register types now, don't gate on L2 data).
+> Carried-forward Phase 1 decisions and accepted ADRs also bind; §11 holds residual risks.
 
 | Decision | How it constrains this feature |
 |---|---|

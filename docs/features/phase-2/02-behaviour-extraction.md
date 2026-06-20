@@ -57,8 +57,11 @@ It is an **extension, not a rewrite** — new prompt templates + new target type
 
 ## 4. Applied decisions
 
-> No `docs/phase-2/decisions.md` is locked yet (noted, not fabricated). Carried-forward Phase 1
-> decisions and accepted ADRs bind; new questions are in §11.
+> Phase 2 decisions are locked in [`docs/phase-2/decisions.md`](../../phase-2/decisions.md). This
+> feature's accuracy floors are **D-P2.1** (behaviour entities + behavioural relationships); see also
+> **D-P2.5** (quarantine/cross-pass resolution), **D-P2.6** (workflow engine deferred), **D-P2.7**
+> (prompt versioning). Carried-forward Phase 1 decisions and accepted ADRs also bind; §11 holds any
+> residual risks.
 
 | Decision | How it constrains this feature |
 |---|---|

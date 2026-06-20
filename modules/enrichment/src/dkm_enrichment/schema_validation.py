@@ -24,6 +24,9 @@ from referencing import Registry, Resource
 
 from dkm_enrichment.models import RELATIONSHIP_TYPE
 
+# The 2.1 grouped relationship schemas (each a single file with a ``kind`` enum, D-P2.4).
+BEHAVIOURAL_RELATIONSHIP_SCHEMA_ID = "https://dkm.dev/schemas/relationships/behavioural.schema.json"
+
 
 def find_schemas_dir(start: Path | None = None) -> Path:
     """Locate the repo-root ``/schemas`` directory by walking upward."""
@@ -120,6 +123,31 @@ class SchemaValidator:
         path = "/" + "/".join(str(p) for p in (match.absolute_path if match else []))
         message = match.message if match else "validation error"
         return ValidationOutcome(False, f"{path}: {message}")
+
+    def validate_behavioural_relationship(
+        self, relationship_type: str, source_type: str, target_type: str
+    ) -> ValidationOutcome:
+        """Validate a behavioural edge's endpoint types against ``behavioural.schema.json``.
+
+        The intermediate JSONL relationship form (``sourceEntityId`` / ``targetEntityId``) is
+        validated structurally elsewhere; here we check that the edge's endpoint *inventory
+        types* satisfy the 2.1 ``{sourceType, targetType}`` constraints for its ``relationshipType``
+        (e.g. ``emits`` must go ``OrchestrationStep|Service → Event``). We build the canonical
+        graph-edge shape the schema expects and reuse :meth:`validate_against_schema_id`.
+        """
+
+        edge = {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "type": RELATIONSHIP_TYPE,
+            "relationshipType": relationship_type,
+            "sourceId": "source",
+            "targetId": "target",
+            "version": "1.0.0",
+            "evidencedBy": [{"source": "extraction", "fetchedAt": "1970-01-01T00:00:00.000Z"}],
+            "sourceType": source_type,
+            "targetType": target_type,
+        }
+        return self.validate_against_schema_id(BEHAVIOURAL_RELATIONSHIP_SCHEMA_ID, edge)
 
     def validate_relationship_data(self, data: dict[str, Any]) -> ValidationOutcome:
         """Validate the spec 003 intermediate relationship payload shape."""

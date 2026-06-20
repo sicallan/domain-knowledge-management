@@ -1,0 +1,197 @@
+{
+  "id": "payments-behaviour-golden-v1",
+  "name": "Payments behaviour golden dataset (Phase 2.2)",
+  "documents": [
+    {
+      "id": "golden-card-authorisation",
+      "file": "documents/card-authorisation-flow.md",
+      "sourcePath": "payments/card-authorisation-flow.md",
+      "sourceAuthority": "scheme",
+      "title": "Card Authorisation Flow"
+    },
+    {
+      "id": "golden-settlement-flow",
+      "file": "documents/settlement-runbook.md",
+      "sourcePath": "payments/settlement-runbook.md",
+      "sourceAuthority": "scheme",
+      "title": "Settlement Flow"
+    },
+    {
+      "id": "golden-refund-flow",
+      "file": "documents/refund-sequence.md",
+      "sourcePath": "payments/refund-sequence.md",
+      "sourceAuthority": "scheme",
+      "title": "Refund Flow"
+    },
+    {
+      "id": "golden-disputes",
+      "file": "documents/disputes-runbook.md",
+      "sourcePath": "payments/disputes-runbook.md",
+      "sourceAuthority": "scheme",
+      "title": "Disputes Flows"
+    }
+  ],
+  "expectedEntities": [
+    { "type": "OrchestrationFlow", "name": "Card Authorisation Flow" },
+    { "type": "OrchestrationFlow", "name": "Settlement Flow" },
+    { "type": "OrchestrationFlow", "name": "Refund Flow" },
+    { "type": "OrchestrationFlow", "name": "Chargeback Flow" },
+    { "type": "OrchestrationFlow", "name": "Fraud Hold Flow" },
+
+    { "type": "OrchestrationStep", "name": "Validate Card" },
+    { "type": "OrchestrationStep", "name": "Check Funds" },
+    { "type": "OrchestrationStep", "name": "Score Risk" },
+    { "type": "OrchestrationStep", "name": "Authorise" },
+    { "type": "OrchestrationStep", "name": "Publish Outcome" },
+    { "type": "OrchestrationStep", "name": "Aggregate Captures" },
+    { "type": "OrchestrationStep", "name": "Compute Net Position" },
+    { "type": "OrchestrationStep", "name": "Submit To Scheme" },
+    { "type": "OrchestrationStep", "name": "Confirm Settlement" },
+    { "type": "OrchestrationStep", "name": "Reverse Submission" },
+    { "type": "OrchestrationStep", "name": "Validate Refund Window" },
+    { "type": "OrchestrationStep", "name": "Check Original Payment" },
+    { "type": "OrchestrationStep", "name": "Approve Refund Step" },
+    { "type": "OrchestrationStep", "name": "Issue Refund" },
+    { "type": "OrchestrationStep", "name": "Open Dispute" },
+    { "type": "OrchestrationStep", "name": "Gather Evidence" },
+    { "type": "OrchestrationStep", "name": "Represent Or Accept" },
+    { "type": "OrchestrationStep", "name": "Post Adjustment" },
+    { "type": "OrchestrationStep", "name": "Place Hold" },
+    { "type": "OrchestrationStep", "name": "Notify Customer" },
+    { "type": "OrchestrationStep", "name": "Review Hold" },
+    { "type": "OrchestrationStep", "name": "Release Or Block" },
+
+    { "type": "Event", "name": "AuthorisationRequested" },
+    { "type": "Event", "name": "PaymentAuthorised" },
+    { "type": "Event", "name": "ClearingWindowClosed" },
+    { "type": "Event", "name": "SettlementSubmitted" },
+    { "type": "Event", "name": "RefundRequested" },
+    { "type": "Event", "name": "RefundIssued" },
+    { "type": "Event", "name": "ChargebackReceived" },
+    { "type": "Event", "name": "ChargebackResolved" },
+    { "type": "Event", "name": "HighRiskScored" },
+    { "type": "Event", "name": "FraudHoldPlaced" },
+
+    { "type": "StateTransition", "name": "Settlement Batch settled" },
+    { "type": "StateTransition", "name": "Payment refunded" },
+    { "type": "StateTransition", "name": "Dispute closed" },
+    { "type": "StateTransition", "name": "Account released" }
+  ],
+  "expectedRelationships": [
+    { "relationshipType": "triggers", "sourceName": "AuthorisationRequested", "targetName": "Card Authorisation Flow" },
+    { "relationshipType": "triggers", "sourceName": "ClearingWindowClosed", "targetName": "Settlement Flow" },
+    { "relationshipType": "triggers", "sourceName": "RefundRequested", "targetName": "Refund Flow" },
+    { "relationshipType": "triggers", "sourceName": "ChargebackReceived", "targetName": "Chargeback Flow" },
+    { "relationshipType": "triggers", "sourceName": "HighRiskScored", "targetName": "Fraud Hold Flow" },
+
+    { "relationshipType": "emits", "sourceName": "Publish Outcome", "targetName": "PaymentAuthorised" },
+    { "relationshipType": "emits", "sourceName": "Submit To Scheme", "targetName": "SettlementSubmitted" },
+    { "relationshipType": "emits", "sourceName": "Issue Refund", "targetName": "RefundIssued" },
+    { "relationshipType": "emits", "sourceName": "Post Adjustment", "targetName": "ChargebackResolved" },
+    { "relationshipType": "emits", "sourceName": "Place Hold", "targetName": "FraudHoldPlaced" },
+
+    { "relationshipType": "transitionsTo", "sourceName": "Confirm Settlement", "targetName": "Settlement Batch settled" },
+    { "relationshipType": "transitionsTo", "sourceName": "Issue Refund", "targetName": "Payment refunded" },
+    { "relationshipType": "transitionsTo", "sourceName": "Post Adjustment", "targetName": "Dispute closed" },
+    { "relationshipType": "transitionsTo", "sourceName": "Release Or Block", "targetName": "Account released" },
+
+    { "relationshipType": "compensates", "sourceName": "Reverse Submission", "targetName": "Submit To Scheme" },
+    { "relationshipType": "compensates", "sourceName": "Release Or Block", "targetName": "Place Hold" },
+
+    { "relationshipType": "invokes", "sourceName": "Score Risk", "targetName": "Score Transaction Risk" },
+    { "relationshipType": "invokes", "sourceName": "Approve Refund Step", "targetName": "Approve Refund" },
+    { "relationshipType": "invokes", "sourceName": "Represent Or Accept", "targetName": "Represent Chargeback" },
+    { "relationshipType": "invokes", "sourceName": "Review Hold", "targetName": "Fraud Hold Decision" }
+  ],
+  "extractionScript": {
+    "golden-card-authorisation": {
+      "Card Authorisation Flow": {
+        "entities": [
+          { "type": "OrchestrationFlow", "name": "Card Authorisation Flow", "trigger": "AuthorisationRequested", "owningService": "Authorisation Service", "steps": ["Validate Card", "Check Funds", "Score Risk", "Authorise", "Publish Outcome"], "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Validate Card", "sequence": 0, "actionType": "validate", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Check Funds", "sequence": 1, "actionType": "invoke-service", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Score Risk", "sequence": 2, "actionType": "evaluate-decision", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Authorise", "sequence": 3, "actionType": "invoke-service", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Publish Outcome", "sequence": 4, "actionType": "publish-event", "confidence": 0.92 },
+          { "type": "Event", "name": "AuthorisationRequested", "eventType": "integration", "confidence": 0.92 },
+          { "type": "Event", "name": "PaymentAuthorised", "eventType": "domain", "emitter": "Authorisation Service", "confidence": 0.92 }
+        ],
+        "relationships": [
+          { "type": "triggers", "source": "AuthorisationRequested", "target": "Card Authorisation Flow", "confidence": 0.9 },
+          { "type": "emits", "source": "Publish Outcome", "target": "PaymentAuthorised", "confidence": 0.9 }
+        ]
+      }
+    },
+    "golden-settlement-flow": {
+      "Settlement Flow": {
+        "entities": [
+          { "type": "OrchestrationFlow", "name": "Settlement Flow", "trigger": "ClearingWindowClosed", "owningService": "Settlement Service", "steps": ["Aggregate Captures", "Compute Net Position", "Submit To Scheme", "Confirm Settlement", "Reverse Submission"], "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Aggregate Captures", "sequence": 0, "actionType": "invoke-service", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Compute Net Position", "sequence": 1, "actionType": "compute", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Submit To Scheme", "sequence": 2, "actionType": "publish-event", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Confirm Settlement", "sequence": 3, "actionType": "persist", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Reverse Submission", "sequence": 4, "actionType": "compensate", "confidence": 0.92 },
+          { "type": "Event", "name": "ClearingWindowClosed", "eventType": "integration", "confidence": 0.92 },
+          { "type": "Event", "name": "SettlementSubmitted", "eventType": "integration", "emitter": "Settlement Service", "confidence": 0.92 },
+          { "type": "StateTransition", "name": "Settlement Batch settled", "entity": "Settlement Batch", "fromState": "open", "toState": "settled", "trigger": "SettlementConfirmed", "confidence": 0.92 }
+        ],
+        "relationships": [
+          { "type": "triggers", "source": "ClearingWindowClosed", "target": "Settlement Flow", "confidence": 0.9 },
+          { "type": "emits", "source": "Submit To Scheme", "target": "SettlementSubmitted", "confidence": 0.9 },
+          { "type": "transitionsTo", "source": "Confirm Settlement", "target": "Settlement Batch settled", "confidence": 0.9 },
+          { "type": "compensates", "source": "Reverse Submission", "target": "Submit To Scheme", "confidence": 0.9 }
+        ]
+      }
+    },
+    "golden-refund-flow": {
+      "Refund Flow": {
+        "entities": [
+          { "type": "OrchestrationFlow", "name": "Refund Flow", "trigger": "RefundRequested", "owningService": "Refund Service", "steps": ["Validate Refund Window", "Check Original Payment", "Approve Refund Step", "Issue Refund"], "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Validate Refund Window", "sequence": 0, "actionType": "validate", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Check Original Payment", "sequence": 1, "actionType": "invoke-service", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Approve Refund Step", "sequence": 2, "actionType": "evaluate-decision", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Issue Refund", "sequence": 3, "actionType": "publish-event", "confidence": 0.92 },
+          { "type": "Event", "name": "RefundRequested", "eventType": "integration", "confidence": 0.92 },
+          { "type": "Event", "name": "RefundIssued", "eventType": "domain", "emitter": "Refund Service", "confidence": 0.92 },
+          { "type": "StateTransition", "name": "Payment refunded", "entity": "Payment", "fromState": "settled", "toState": "refunded", "trigger": "RefundIssued", "confidence": 0.92 }
+        ],
+        "relationships": [
+          { "type": "triggers", "source": "RefundRequested", "target": "Refund Flow", "confidence": 0.9 },
+          { "type": "emits", "source": "Issue Refund", "target": "RefundIssued", "confidence": 0.9 },
+          { "type": "transitionsTo", "source": "Issue Refund", "target": "Payment refunded", "confidence": 0.9 }
+        ]
+      }
+    },
+    "golden-disputes": {
+      "Disputes Flows": {
+        "entities": [
+          { "type": "OrchestrationFlow", "name": "Chargeback Flow", "trigger": "ChargebackReceived", "owningService": "Disputes Service", "steps": ["Open Dispute", "Gather Evidence", "Represent Or Accept", "Post Adjustment"], "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Open Dispute", "sequence": 0, "actionType": "invoke-service", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Gather Evidence", "sequence": 1, "actionType": "invoke-service", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Represent Or Accept", "sequence": 2, "actionType": "evaluate-decision", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Post Adjustment", "sequence": 3, "actionType": "publish-event", "confidence": 0.92 },
+          { "type": "Event", "name": "ChargebackReceived", "eventType": "integration", "confidence": 0.92 },
+          { "type": "Event", "name": "ChargebackResolved", "eventType": "domain", "emitter": "Disputes Service", "confidence": 0.92 },
+          { "type": "StateTransition", "name": "Dispute closed", "entity": "Dispute", "fromState": "open", "toState": "closed", "trigger": "ChargebackResolved", "confidence": 0.92 },
+          { "type": "OrchestrationFlow", "name": "Fraud Hold Flow", "trigger": "HighRiskScored", "owningService": "Fraud Service", "steps": ["Place Hold", "Notify Customer", "Review Hold", "Release Or Block"], "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Place Hold", "sequence": 0, "actionType": "publish-event", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Notify Customer", "sequence": 1, "actionType": "notify", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Review Hold", "sequence": 2, "actionType": "evaluate-decision", "confidence": 0.92 },
+          { "type": "OrchestrationStep", "name": "Release Or Block", "sequence": 3, "actionType": "compensate", "confidence": 0.92 },
+          { "type": "Event", "name": "HighRiskScored", "eventType": "integration", "confidence": 0.92 },
+          { "type": "Event", "name": "FraudHoldPlaced", "eventType": "domain", "emitter": "Fraud Service", "confidence": 0.92 },
+          { "type": "StateTransition", "name": "Account released", "entity": "Account", "fromState": "held", "toState": "active", "trigger": "HoldReleased", "confidence": 0.92 }
+        ],
+        "relationships": [
+          { "type": "triggers", "source": "ChargebackReceived", "target": "Chargeback Flow", "confidence": 0.9 },
+          { "type": "emits", "source": "Post Adjustment", "target": "ChargebackResolved", "confidence": 0.9 },
+          { "type": "transitionsTo", "source": "Post Adjustment", "target": "Dispute closed", "confidence": 0.9 },
+          { "type": "triggers", "source": "HighRiskScored", "target": "Fraud Hold Flow", "confidence": 0.9 },
+          { "type": "emits", "source": "Place Hold", "target": "FraudHoldPlaced", "confidence": 0.9 },
+          { "type": "transitionsTo", "source": "Release Or Block", "target": "Account released", "confidence": 0.9 },
+          { "type": "compensates", "source": "Release Or Block", "target": "Place Hold", "confidence": 0.9 }
+        ]
+      }
+    }
+  }
+}

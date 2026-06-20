@@ -28,6 +28,8 @@ from dkm_enrichment.extraction_schemas import (
 )
 from dkm_enrichment.gateway.base import LLMGateway
 from dkm_enrichment.models import (
+    BEHAVIOURAL_RELATIONSHIP_TYPES,
+    PHASE_2_BEHAVIOUR_TYPES,
     RELATIONSHIP_TYPE,
     CanonicalDocument,
     ExtractionConfig,
@@ -308,6 +310,10 @@ class ExtractionPipeline:
         )
         confidences: list[float] = []
         emitted_ids: set[str] = set()
+        # Endpoint-type lookup spans *all* built entities (including those the gates below
+        # exclude), so a behavioural edge can tell a wrong-typed endpoint apart from a
+        # cross-pass placeholder that was extracted but not committed.
+        entity_type_by_id = {entry.id: entry.type for entry in entities}
 
         with JsonlWriter(extractions_path) as writer:
             for entry in entities:
@@ -333,9 +339,38 @@ class ExtractionPipeline:
 
         with JsonlWriter(relationships_path) as writer:
             for entry in relationships:
-                source_id = entry.data.get("sourceEntityId")
-                target_id = entry.data.get("targetEntityId")
-                if source_id not in emitted_ids or target_id not in emitted_ids:
+                rel_type = str(entry.data.get("relationshipType", ""))
+                source_id = str(entry.data.get("sourceEntityId", ""))
+                target_id = str(entry.data.get("targetEntityId", ""))
+                source_type = entity_type_by_id.get(source_id)
+                target_type = entity_type_by_id.get(target_id)
+
+                # An edge is governed by the behavioural endpoint gate only when it is a
+                # behavioural relationshipType *and* at least one endpoint is a Phase 2
+                # behaviour entity. This keeps the overloaded `consumes` (Phase 1's
+                # Decision → ReferenceData) on the structural path, untouched.
+                if rel_type in BEHAVIOURAL_RELATIONSHIP_TYPES and (
+                    source_type in PHASE_2_BEHAVIOUR_TYPES
+                    or target_type in PHASE_2_BEHAVIOUR_TYPES
+                ):
+                    # D-P2.5: quarantine (never commit as a dangling edge) when an endpoint is
+                    # not committed — e.g. invokes → a not-yet-extracted Decision placeholder —
+                    # or when the endpoint *types* violate behavioural.schema.json. (Both
+                    # endpoints being committed guarantees their types are non-None here.)
+                    endpoints_committed = (
+                        source_id in emitted_ids and target_id in emitted_ids
+                    )
+                    if not endpoints_committed or not (
+                        self._validator.validate_behavioural_relationship(
+                            rel_type, source_type or "", target_type or ""
+                        ).valid
+                    ):
+                        stats.quarantined += 1
+                        logger.info(
+                            "Quarantined behavioural relationship %s (%s)", entry.id, rel_type
+                        )
+                        continue
+                elif source_id not in emitted_ids or target_id not in emitted_ids:
                     stats.validationFailures += 1
                     logger.info("Relationship %s dropped: endpoint not emitted", entry.id)
                     continue

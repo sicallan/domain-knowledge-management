@@ -47,7 +47,7 @@ describe("GraphLoader integration — in-memory adapter", () => {
     await assertFixtureRoundTrip(new InMemoryGraphAdapter());
   });
 
-  it("reports a relationship with a missing endpoint as a non-retriable error (no crash)", async () => {
+  it("quarantines a relationship with a missing endpoint (cross-pass resolution, D-P2.5)", async () => {
     const graph = new InMemoryGraphAdapter();
     const loader = new GraphLoader(graph);
     await loader.initialize({});
@@ -73,10 +73,12 @@ describe("GraphLoader integration — in-memory adapter", () => {
 
     const result = await loader.load(toAsyncIterable([decision, danglingRel]), "run-dangling");
     expect(result.loaded).toBe(1); // the decision node
-    expect(result.failed).toBe(1);
-    expect(result.errors[0]?.entryId).toBe("r1");
-    expect(result.errors[0]?.retriable).toBe(false);
-    expect(result.errors[0]?.error).toMatch(/missing endpoint/i);
+    expect(result.failed).toBe(0); // dangling is quarantined, not a hard failure
+    expect(result.errors).toHaveLength(0);
+    expect(result.quarantined).toBe(1);
+    expect(result.quarantine?.[0]?.entryId).toBe("r1");
+    expect(result.quarantine?.[0]?.reason).toBe("dangling-endpoint");
+    expect(result.quarantine?.[0]?.detail).toMatch(/does-not-exist/);
     // The edge was never created.
     expect(await graph.getEdges("d1", "out")).toHaveLength(0);
   });

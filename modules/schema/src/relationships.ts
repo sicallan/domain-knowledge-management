@@ -18,15 +18,26 @@ export interface RelationshipTypeDef {
   description?: string;
 }
 
+// Decision-specific + structural edge types (plan.md §Decision-specific / §Structural).
+//
+// `sourceTypes`/`targetTypes` are the endpoint types the LINK gate (loader) checks — a COARSE
+// union per name (the fine per-kind constraint is the emit-time JSON-Schema gate). Link-time
+// endpoint typing is scoped to the **decision-specific** edges (a decision's traceability is
+// the high-value, well-defined cross-layer signal). Structural containment edges
+// (`belongsTo`, `implements`, `emits`, `evidencedBy`) are deliberately endpoint-OPEN: they are
+// used broadly across the model (e.g. any inventory type `belongsTo` a BoundedContext), so a
+// narrow link-time type gate would wrongly quarantine valid edges. `consumes` is overloaded
+// (Decision→ReferenceData and Service→Event), so its endpoint sets are the union.
 const DEFAULT_DEFS: RelationshipTypeDef[] = [
-  { name: "evaluates", maxTargetsPerSource: "unbounded", minTargetsPerSource: 1, description: "Decision → Rule (≥1)" },
-  { name: "consumes", maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Decision → ReferenceData" },
-  { name: "constrainedBy", maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "→ BusinessInvariant" },
-  { name: "produces", maxTargetsPerSource: "unbounded", minTargetsPerSource: 1, description: "Decision → outcome (≥1)" },
-  { name: "triggeredBy", maxTargetsPerSource: 1, minTargetsPerSource: 0, description: "Event/Step → Decision" },
-  { name: "realizedBy", maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Decision → Service" },
+  { name: "evaluates", sourceTypes: ["Decision"], targetTypes: ["Rule", "BusinessInvariant"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 1, description: "Decision → Rule (≥1)" },
+  { name: "consumes", sourceTypes: ["Decision", "Service"], targetTypes: ["ReferenceData", "Event"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Decision → ReferenceData / Service → Event" },
+  { name: "constrainedBy", sourceTypes: ["Decision", "DomainConcept"], targetTypes: ["BusinessInvariant"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Decision/DomainConcept → BusinessInvariant" },
+  { name: "produces", sourceTypes: ["Decision"], targetTypes: ["Event", "Command", "StateTransition"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 1, description: "Decision → outcome (≥1)" },
+  { name: "triggeredBy", sourceTypes: ["Event", "OrchestrationStep"], targetTypes: ["Decision"], maxTargetsPerSource: 1, minTargetsPerSource: 0, description: "Event/Step → Decision" },
+  { name: "realizedBy", sourceTypes: ["Decision"], targetTypes: ["Service", "Component"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Decision → Service" },
+  // Structural containment / provenance — endpoint-open at the link gate (used broadly).
   { name: "implements", maxTargetsPerSource: "unbounded", minTargetsPerSource: 1, description: "Service → DomainConcept (≥1)" },
-  { name: "belongsTo", maxTargetsPerSource: 1, minTargetsPerSource: 1, description: "Service → BoundedContext (exactly one)" },
+  { name: "belongsTo", maxTargetsPerSource: 1, minTargetsPerSource: 1, description: "→ BoundedContext (exactly one)" },
   { name: "emits", maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Service → Event" },
   { name: "evidencedBy", maxTargetsPerSource: "unbounded", minTargetsPerSource: 1, description: "Any → Source (≥1)" },
 ];
@@ -42,6 +53,25 @@ export const BEHAVIOURAL_RELATIONSHIP_DEFS: RelationshipTypeDef[] = [
   { name: "transitionsTo", sourceTypes: ["OrchestrationStep"], targetTypes: ["StateTransition"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "OrchestrationStep → StateTransition" },
   { name: "compensates", sourceTypes: ["OrchestrationStep"], targetTypes: ["OrchestrationStep"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "OrchestrationStep → OrchestrationStep" },
   { name: "invokes", sourceTypes: ["OrchestrationStep"], targetTypes: ["Decision"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "OrchestrationStep → Decision" },
+];
+
+/**
+ * Cross-layer edge types (plan.md §Structural / §Regulatory). Phase 2.5 adds these
+ * additively — the regulatory edges (`satisfiedBy`, `obliges`, `exposes`) and the
+ * remaining structural edges (`usesReferenceData`, `governs`) that span L1↔L2↔L3.
+ * Endpoint types come from plan.md; cardinalities are unbounded with no minimum (these
+ * are optional cross-layer links, not completeness requirements). `satisfiedBy` registers
+ * the L2 `ProjectSpec` target now (forward-compatible — not gated on L2 data existing,
+ * which arrives in Phase 3; see docs/phase-2/decisions.md "Deferred to their own feature").
+ */
+export const CROSS_LAYER_RELATIONSHIP_DEFS: RelationshipTypeDef[] = [
+  { name: "satisfiedBy", sourceTypes: ["RegulatoryRequirement"], targetTypes: ["ProjectSpec", "Rule", "PolicyStatement", "Decision"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "RegulatoryRequirement → ProjectSpec/Rule/PolicyStatement/Decision" },
+  { name: "obliges", sourceTypes: ["RegulatoryRequirement"], targetTypes: ["DomainConcept", "BusinessCapability"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "RegulatoryRequirement → DomainConcept/BusinessCapability" },
+  { name: "exposes", sourceTypes: ["Service"], targetTypes: ["RegulatoryRequirement"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Service → RegulatoryRequirement (surface area)" },
+  { name: "usesReferenceData", sourceTypes: ["Service", "Rule", "Decision"], targetTypes: ["ReferenceData"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Service/Rule/Decision → ReferenceData" },
+  // governs is a broad structural edge (plan: Rule→DomainConcept; also Capability→Decision) →
+  // endpoint-open at the link gate, like the other structural containment edges.
+  { name: "governs", maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Rule/Capability → DomainConcept/Decision/Step" },
 ];
 
 /**
@@ -136,6 +166,44 @@ export function registerBehaviouralRelationships(registry: RelationshipTypeRegis
   for (const def of BEHAVIOURAL_RELATIONSHIP_DEFS) {
     registry.register(def);
   }
+}
+
+/**
+ * Register the cross-layer edge types (plan.md §Structural / §Regulatory) onto a registry.
+ * Pure extension via `register()` — the shipped DEFAULT_DEFS are never modified (OCP).
+ */
+export function registerCrossLayerRelationships(registry: RelationshipTypeRegistry): void {
+  for (const def of CROSS_LAYER_RELATIONSHIP_DEFS) {
+    registry.register(def);
+  }
+}
+
+/**
+ * The single shared rule set the loader / link gate consumes (D-P2.2): the shipped
+ * decision-specific + structural defaults, plus the behavioural and cross-layer edge types,
+ * registered additively. The same **cardinality** rules (`canAddEdge`, `checkMinimum`,
+ * `checkAutomatedDecisionTrigger`) are thereby enforced at both the emit gate (Features 02/03)
+ * and the load/link gate.
+ *
+ * Endpoint-type checking at the link gate is scoped to the **decision-specific + regulatory
+ * cross-layer** edges (a decision's traceability and regulatory coverage — the cross-layer
+ * signal Phase 2.5 is about). Behavioural edges are registered **cardinality-only** here so
+ * the link gate does not re-type intra-behaviour-layer edges — that typing is the emit gate's
+ * JSON-Schema job (`behavioural.schema.json`), and behavioural edges are legitimately used more
+ * broadly in practice (e.g. a decision that `triggers` another decision).
+ */
+export function createFullRelationshipRegistry(): RelationshipTypeRegistry {
+  const registry = new RelationshipTypeRegistry();
+  for (const def of BEHAVIOURAL_RELATIONSHIP_DEFS) {
+    registry.register({
+      name: def.name,
+      maxTargetsPerSource: def.maxTargetsPerSource,
+      minTargetsPerSource: def.minTargetsPerSource,
+      description: def.description,
+    });
+  }
+  registerCrossLayerRelationships(registry);
+  return registry;
 }
 
 function ok(): ValidationResult {

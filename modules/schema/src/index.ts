@@ -9,7 +9,10 @@ export type { SchemaModule } from "./validator";
 export {
   RelationshipTypeRegistry,
   registerBehaviouralRelationships,
+  registerCrossLayerRelationships,
+  createFullRelationshipRegistry,
   BEHAVIOURAL_RELATIONSHIP_DEFS,
+  CROSS_LAYER_RELATIONSHIP_DEFS,
 } from "./relationships";
 export type { RelationshipTypeDef } from "./relationships";
 

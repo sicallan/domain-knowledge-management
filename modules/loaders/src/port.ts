@@ -16,6 +16,33 @@ export interface LoadError {
   retriable: boolean;
 }
 
+/**
+ * Why a relationship edge was routed to the review queue instead of being committed
+ * (D-P2.5: quarantine + count, never drop, never commit a dangling edge):
+ *  - `dangling-endpoint` — an endpoint node was not (yet) extracted (cross-pass ordering).
+ *  - `endpoint-type-mismatch` — both endpoints exist but a type violates the registry.
+ *  - `cardinality-violation` — committing would breach a max-cardinality rule (e.g. belongsTo N:1).
+ */
+export type QuarantineReason = "dangling-endpoint" | "endpoint-type-mismatch" | "cardinality-violation";
+
+/** A relationship edge held for review rather than committed (D-P2.5). */
+export interface QuarantinedEdge {
+  entryId: string;
+  relationshipType: string;
+  sourceId: string;
+  targetId: string;
+  reason: QuarantineReason;
+  detail: string;
+}
+
+/** A link-time completeness breach on a node (min / conditional cardinality, D-P2.2). */
+export interface IntegrityViolation {
+  decisionId: string;
+  relationshipType: string;
+  keyword: "minCardinality" | "conditionalCardinality";
+  detail: string;
+}
+
 export interface LoadResult {
   runId: string;
   totalEntries: number;
@@ -24,15 +51,21 @@ export interface LoadResult {
   failed: number;
   errors: LoadError[];
   duration: number;
+  /** Count of edges routed to review instead of committed (D-P2.5). Optional: not every loader quarantines. */
+  quarantined?: number;
+  /** The quarantined edges, surfaced for the review queue (D-P2.5). */
+  quarantine?: QuarantinedEdge[];
 }
 
-export type EntryLoadStatus = "loaded" | "skipped" | "failed";
+export type EntryLoadStatus = "loaded" | "skipped" | "failed" | "quarantined";
 
 export interface EntryLoadResult {
   entryId: string;
   status: EntryLoadStatus;
   error?: string;
   retriable?: boolean;
+  /** Present when `status === "quarantined"`: why the edge was held for review. */
+  quarantine?: Omit<QuarantinedEdge, "entryId">;
 }
 
 /**

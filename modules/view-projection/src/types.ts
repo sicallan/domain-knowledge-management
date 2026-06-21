@@ -149,3 +149,74 @@ export interface DomainMapView {
   subdomains: DomainMapSubdomain[];
   crossContextRelationships: CrossContextRelationship[];
 }
+
+// ---------------------------------------------------------------------------
+// Behaviour Flow view (feature 04 §7). Spec 007 lists the Behaviour Flow view
+// but leaves its output schema to the implementing feature, mirroring the Domain
+// Map precedent. Additive only — fields may grow but never change (spec 007 Open
+// Q2): consumers stay protected until a GraphQL contract pins it (Phase 3).
+// ---------------------------------------------------------------------------
+
+/** Parameters accepted by the Behaviour Flow projector (spec 007 §Defined Views). */
+export interface BehaviourFlowParams {
+  /** The OrchestrationFlow id to project. */
+  flowId: string;
+}
+
+/** An event a step emits or consumes, surfaced in the flow view. */
+export interface BehaviourFlowEventRef {
+  eventId: string;
+  name: string;
+}
+
+/** An outgoing state transition from a step (StateTransition node fields). */
+export interface BehaviourFlowTransition {
+  fromState: string;
+  toState: string;
+  guardCondition?: string;
+}
+
+/** A single branch of a decision point: an outcome label + the event it may produce. */
+export interface BehaviourFlowOutcome {
+  label: string;
+  /** The Event a `produces` edge ties to this outcome, when one matches. */
+  producesEventId?: string;
+}
+
+/** The Decision a step invokes — the highlighted decision point (criterion 3). */
+export interface BehaviourFlowDecision {
+  id: string;
+  name: string;
+  /** The Decision's axis field (`decisionType` on the node, not the base `type`). */
+  type: "automated" | "manual" | "hybrid";
+  outcomes: BehaviourFlowOutcome[];
+}
+
+/** A single step in the projected flow, surfaced in `sequence` order. */
+export interface BehaviourFlowStep {
+  id: string;
+  sequence: number;
+  actionType: string;
+  serviceOrComponent?: string;
+  emits: BehaviourFlowEventRef[];
+  consumes: BehaviourFlowEventRef[];
+  transitions: BehaviourFlowTransition[];
+  isDecisionPoint: boolean;
+  decision?: BehaviourFlowDecision;
+  /** The stepId this step compensates (saga rollback), when it is a compensation step. */
+  compensates?: string;
+}
+
+/** The flow header — the OrchestrationFlow node's own fields (feature 04 §7). */
+export interface BehaviourFlowHeader {
+  id: string;
+  name: string;
+  trigger: string;
+  owningService?: string;
+}
+
+/** The Behaviour Flow view output (feature 04 §7). */
+export interface BehaviourFlowView {
+  flow: BehaviourFlowHeader;
+  steps: BehaviourFlowStep[];
+}

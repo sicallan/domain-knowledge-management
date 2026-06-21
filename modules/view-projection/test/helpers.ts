@@ -102,3 +102,71 @@ export async function seededInMemoryGraph(): Promise<InMemoryGraphAdapter> {
   await seedStandardGraph(graph);
   return graph;
 }
+
+/** The flow id seeded by {@link seedBehaviourFlowGraph}. */
+export const BEHAVIOUR_FLOW_ID = "flow-auth";
+
+/**
+ * Seed the canonical Behaviour Flow scenario used by the feature 04 unit tests — a
+ * Payments card-authorisation flow (deliberately exercising every projected facet):
+ *
+ *  - `flow-auth` (Card Authorisation), triggered by event `evt-requested`, owned by `auth-svc`.
+ *  - Three steps held as **scrambled ordered ids** in `flow.steps` but with `sequence`
+ *    fields defining the true order: `step-validate` (0) → `step-decide` (1) → `step-settle` (2).
+ *  - `step-validate` emits `evt-validated` and `transitionsTo` `st-validated`.
+ *  - `step-decide` `invokes` Decision `dec-auth` (the decision point).
+ *  - `step-settle` emits `evt-approved` and `compensates` `step-validate`.
+ *  - `dec-auth` (automated, outcomes approved/declined) `produces` `evt-approved`
+ *    (whose name "approved" matches the outcome → producesEventId set for that branch).
+ *
+ * Expected first-step `consumes` = the trigger event `evt-requested` (best-effort wiring).
+ */
+export async function seedBehaviourFlowGraph(graph: GraphPort): Promise<void> {
+  // Flow + steps (steps listed out of sequence order on purpose).
+  await graph.upsertNode(
+    makeNode("OrchestrationFlow", "flow-auth", {
+      name: "Card Authorisation",
+      trigger: "AuthorisationRequested",
+      owningService: "auth-svc",
+      steps: ["step-decide", "step-settle", "step-validate"],
+    }),
+  );
+  await graph.upsertNode(
+    makeNode("OrchestrationStep", "step-validate", { sequence: 0, actionType: "invoke-service", serviceOrComponent: "validation-svc" }),
+  );
+  await graph.upsertNode(
+    makeNode("OrchestrationStep", "step-decide", { sequence: 1, actionType: "evaluate-decision", serviceOrComponent: "auth-svc" }),
+  );
+  await graph.upsertNode(
+    makeNode("OrchestrationStep", "step-settle", { sequence: 2, actionType: "publish-event", serviceOrComponent: "settlement-svc" }),
+  );
+
+  // Events.
+  await graph.upsertNode(makeNode("Event", "evt-requested", { name: "AuthorisationRequested", eventType: "integration" }));
+  await graph.upsertNode(makeNode("Event", "evt-validated", { name: "CardValidated", eventType: "domain" }));
+  await graph.upsertNode(makeNode("Event", "evt-approved", { name: "approved", eventType: "domain" }));
+
+  // State transition + decision.
+  await graph.upsertNode(
+    makeNode("StateTransition", "st-validated", { entity: "Authorisation", fromState: "pending", toState: "validated", guardCondition: "card present" }),
+  );
+  await graph.upsertNode(
+    makeNode("Decision", "dec-auth", { name: "Authorise Payment", decisionType: "automated", outcomes: ["approved", "declined"] }),
+  );
+
+  // Behavioural + decision edges.
+  await graph.createEdge(makeEdge("triggers", "evt-requested", "flow-auth", "r-trigger"));
+  await graph.createEdge(makeEdge("emits", "step-validate", "evt-validated", "r-emit-validated"));
+  await graph.createEdge(makeEdge("transitionsTo", "step-validate", "st-validated", "r-trans"));
+  await graph.createEdge(makeEdge("invokes", "step-decide", "dec-auth", "r-invokes"));
+  await graph.createEdge(makeEdge("emits", "step-settle", "evt-approved", "r-emit-approved"));
+  await graph.createEdge(makeEdge("compensates", "step-settle", "step-validate", "r-compensates"));
+  await graph.createEdge(makeEdge("produces", "dec-auth", "evt-approved", "r-produces"));
+}
+
+/** A fresh in-memory graph seeded with the canonical Behaviour Flow scenario. */
+export async function seededBehaviourFlowGraph(): Promise<InMemoryGraphAdapter> {
+  const graph = new InMemoryGraphAdapter();
+  await seedBehaviourFlowGraph(graph);
+  return graph;
+}

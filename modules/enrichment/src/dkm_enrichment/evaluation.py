@@ -20,11 +20,15 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from dkm_enrichment.coverage import COVERAGE_VALUES
 from dkm_enrichment.entity_resolution import normalise_name
 from dkm_enrichment.models import (
+    VENDOR_CAPABILITY_MAPPING_TYPE,
     CanonicalDocument,
     CategoryMetrics,
+    CoverageClaimMetrics,
     EvaluationMetrics,
+    ExpectedCoverage,
     ExpectedEntity,
     ExpectedRelationship,
     ExtractionConfig,
@@ -32,6 +36,8 @@ from dkm_enrichment.models import (
     JsonlEntry,
     TypeMetrics,
 )
+
+_COVERED = {"full", "partial"}
 
 if TYPE_CHECKING:
     from dkm_enrichment.pipeline import ExtractionPipeline
@@ -72,6 +78,7 @@ def load_golden_dataset(directory: Path) -> GoldenDataset:
         expectedRelationships=[
             ExpectedRelationship(**r) for r in spec.get("expectedRelationships", [])
         ],
+        expectedCoverage=[ExpectedCoverage(**c) for c in spec.get("expectedCoverage", [])],
     )
 
 
@@ -249,8 +256,76 @@ def _confidence_calibration(
 
 def _entity_name(entry: JsonlEntry) -> str:
     data = entry.data
-    for key in ("name", "statement", "expression"):
+    # ``vendorCapability`` names a VendorCapabilityMapping (it carries no ``name``), so the scorer
+    # can match it to its golden label and (via ``mappedConcept``) score its coverage claim.
+    for key in ("name", "statement", "expression", "vendorCapability"):
         value = data.get(key)
         if isinstance(value, str) and value.strip():
             return value
     return entry.id
+
+
+# --------------------------------------------------------------------------- coverage scoring
+
+
+def score_coverage_claims(
+    predicted: list[JsonlEntry],
+    expected: list[ExpectedCoverage],
+    band: float,
+) -> CoverageClaimMetrics:
+    """Score ``VendorCapabilityMapping.coverage`` against the labels (D-P3.1 — precision-first).
+
+    Matching is by normalised ``vendorCapability``. A *covered* claim (``coverage ∈ {full,
+    partial}``) is a true positive iff the label for that capability is also covered. Precision then
+    penalises both a "covered" asserted where truth is ``none`` **and** a "covered" asserted for a
+    capability that isn't a labelled claim at all (a hallucinated green). ``coveredRecall`` is over
+    the labelled-covered claims; ``exactValueAccuracy`` (full/partial/none) is reported, not gated.
+    """
+
+    truth_by_cap = {normalise_name(c.vendorCapability): c.coverage for c in expected}
+    truth_covered = {cap for cap, cov in truth_by_cap.items() if cov in _COVERED}
+
+    mappings = [e for e in predicted if e.type == VENDOR_CAPABILITY_MAPPING_TYPE]
+    pred_by_cap: dict[str, JsonlEntry] = {}
+    for entry in mappings:
+        cap = normalise_name(_entity_name(entry))
+        pred_by_cap.setdefault(cap, entry)  # first occurrence wins (resolution is order-stable)
+
+    def _coverage(entry: JsonlEntry) -> str:
+        value = entry.data.get("coverage")
+        return value if isinstance(value, str) else ""
+
+    pred_covered_caps = {cap for cap, e in pred_by_cap.items() if _coverage(e) in _COVERED}
+    covered_tp = len(pred_covered_caps & truth_covered)
+    covered_precision = covered_tp / len(pred_covered_caps) if pred_covered_caps else 0.0
+    covered_recall = covered_tp / len(truth_covered) if truth_covered else 0.0
+
+    band_covered = {
+        cap for cap, e in pred_by_cap.items()
+        if _coverage(e) in _COVERED and e.confidence >= band
+    }
+    band_tp = len(band_covered & truth_covered)
+    band_precision = band_tp / len(band_covered) if band_covered else 0.0
+
+    exact_hits = sum(
+        1 for cap, e in pred_by_cap.items()
+        if cap in truth_by_cap and _coverage(e) == truth_by_cap[cap]
+    )
+    scored = [cap for cap in pred_by_cap if cap in truth_by_cap]
+    exact_accuracy = exact_hits / len(scored) if scored else 0.0
+
+    return CoverageClaimMetrics(
+        coveredPrecision=round(covered_precision, 4),
+        coveredRecall=round(covered_recall, 4),
+        autoMergeBandCoveredPrecision=round(band_precision, 4),
+        exactValueAccuracy=round(exact_accuracy, 4),
+        support=len(expected),
+    )
+
+
+def _validate_coverage_labels(expected: list[ExpectedCoverage]) -> None:
+    """Guard: every labelled coverage value is in the locked enum (catches a dataset typo)."""
+
+    for claim in expected:
+        if claim.coverage not in COVERAGE_VALUES:
+            raise ValueError(f"coverage label '{claim.coverage}' not in {COVERAGE_VALUES}")

@@ -31,6 +31,12 @@ TYPE_TEMPLATE_NAMES: dict[str, str] = {
     "OrchestrationStep": "orchestration-step",
     "Event": "event",
     "StateTransition": "state-transition",
+    # Phase 3.2 vendor/project pass (feature 02) — the three L2 types share one ``vendor`` template
+    # (their guidance is interdependent: a VendorProduct's claims resolve through a
+    # VendorCapabilityMapping). ``build_entity_prompt`` de-duplicates stems so it is emitted once.
+    "VendorProduct": "vendor",
+    "VendorCapabilityMapping": "vendor",
+    "ProjectSpec": "vendor",
 }
 
 
@@ -61,9 +67,14 @@ class PromptLibrary:
         return {name: f"v{version}" for name, (version, _) in sorted(self._latest.items())}
 
     def build_entity_prompt(self, chunk: Chunk, target_types: list[str]) -> str:
-        type_guidance = "\n\n".join(
-            self.text(TYPE_TEMPLATE_NAMES[t]) for t in target_types if t in TYPE_TEMPLATE_NAMES
-        )
+        stems: list[str] = []
+        for t in target_types:
+            stem = TYPE_TEMPLATE_NAMES.get(t)
+            # De-duplicate, order-preserving: several types may share one template (the L2 types
+            # all map to ``vendor``), so it is composed once. Distinct-stem types are unaffected.
+            if stem is not None and stem not in stems:
+                stems.append(stem)
+        type_guidance = "\n\n".join(self.text(stem) for stem in stems)
         return (
             f"{self.text('_system')}\n\n"
             f"{type_guidance}\n\n"
@@ -94,7 +105,8 @@ class PromptLibrary:
 
 
 def _display_name(entry: JsonlEntry) -> str:
-    for key in ("name", "statement", "expression"):
+    # ``vendorCapability`` is the display name for a VendorCapabilityMapping (no ``name`` field).
+    for key in ("name", "statement", "expression", "vendorCapability"):
         value = entry.data.get(key)
         if isinstance(value, str) and value.strip():
             return value

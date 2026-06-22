@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/relationships/l2-structural.schema.json",
+  "title": "L2StructuralRelationship",
+  "description": "L2 functional-realisation edges linking vendor/project entries to the L1 they claim to fulfil (plan.md §Structural). Extends the relationship base with the L2 relationshipType enum and the allowed {sourceType, targetType} endpoint pairs. Cardinality rules live in the RelationshipTypeRegistry, not here.",
+  "type": "object",
+  "required": ["sourceType", "targetType"],
+  "properties": {
+    "relationshipType": {
+      "type": "string",
+      "enum": ["fulfils", "specifies", "realizesVendorCap"]
+    },
+    "sourceType": { "type": "string", "minLength": 1, "description": "Inventory type of the source endpoint." },
+    "targetType": { "type": "string", "minLength": 1, "description": "Inventory type of the target endpoint." }
+  },
+  "allOf": [
+    { "$ref": "https://dkm.dev/schemas/relationships/relationship.schema.json" },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "fulfils" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "VendorProduct" },
+          "targetType": { "const": "BusinessCapability" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "specifies" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "ProjectSpec" },
+          "targetType": { "const": "DomainConcept" }
+        }
+      }
+    },
+    {
+      "if": { "required": ["relationshipType"], "properties": { "relationshipType": { "const": "realizesVendorCap" } } },
+      "then": {
+        "properties": {
+          "sourceType": { "const": "Service" },
+          "targetType": { "const": "VendorCapabilityMapping" }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L2/project-spec.schema.json",
+  "title": "ProjectSpec",
+  "description": "L2 — A project artifact (requirement, design, or ADR) that claims to address one or more L1 domain concepts. `specType` is the requirement/design/ADR axis, kept distinct from the base-entry `type` discriminator. Links to the concepts it addresses are modelled as `specifies` relationships.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name", "specType", "status"],
+  "properties": {
+    "type": { "const": "ProjectSpec" },
+    "name": { "type": "string", "minLength": 1 },
+    "specType": { "type": "string", "enum": ["requirement", "design", "ADR"] },
+    "status": { "type": "string", "minLength": 1, "description": "Lifecycle of the spec itself (e.g. draft/approved/superseded)." },
+    "addressedConcepts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Ids of the L1 domain concepts this spec addresses; mirrored as specifies edges."
+    }
+  }
+}

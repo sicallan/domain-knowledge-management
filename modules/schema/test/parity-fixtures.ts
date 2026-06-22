@@ -24,28 +24,56 @@ interface FixtureFile {
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
-// here = <repo>/modules/schema/test → ../../../fixtures/parity/behaviour
-const FIXTURE_PATH = resolve(here, "../../..", "fixtures/parity/behaviour/cases.json");
+// here = <repo>/modules/schema/test → ../../../fixtures/parity/<suite>/cases.json
+const FIXTURE_ROOT = resolve(here, "../../..", "fixtures/parity");
 
 /**
- * Load the unified cross-validator fixture set (spec 001 Decision 3). The very same
+ * Load a unified cross-validator fixture suite (spec 001 Decision 3). The very same
  * file is read by the Python `jsonschema` parity test, so a divergence between the two
- * ecosystems surfaces as a failed `expectValid` assertion in one of them.
+ * ecosystems surfaces as a failed `expectValid` assertion in one of them. Each phase
+ * adds its own suite directory (`behaviour`, `l2`, …) — additive, never edits an
+ * existing suite.
  */
-export function loadParityFixtures(): FixtureFile {
-  const raw = readFileSync(FIXTURE_PATH, "utf-8");
+function loadSuite(suite: string): FixtureFile {
+  const raw = readFileSync(resolve(FIXTURE_ROOT, suite, "cases.json"), "utf-8");
   const parsed = JSON.parse(raw) as FixtureFile;
   return { entries: parsed.entries, relationships: parsed.relationships };
 }
 
-export function entryCase(name: string): EntryCase {
-  const found = loadParityFixtures().entries.find((c) => c.name === name);
+/** Phase 2.1 behaviour + decision suite. */
+export function loadParityFixtures(): FixtureFile {
+  return loadSuite("behaviour");
+}
+
+/** Phase 3.1 L2 vendor/project suite. */
+export function loadL2ParityFixtures(): FixtureFile {
+  return loadSuite("l2");
+}
+
+function findEntry(file: FixtureFile, name: string): EntryCase {
+  const found = file.entries.find((c) => c.name === name);
   if (!found) throw new Error(`No entry fixture named '${name}'`);
   return found;
 }
 
-export function relationshipCase(name: string): RelationshipCase {
-  const found = loadParityFixtures().relationships.find((c) => c.name === name);
+function findRelationship(file: FixtureFile, name: string): RelationshipCase {
+  const found = file.relationships.find((c) => c.name === name);
   if (!found) throw new Error(`No relationship fixture named '${name}'`);
   return found;
+}
+
+export function entryCase(name: string): EntryCase {
+  return findEntry(loadParityFixtures(), name);
+}
+
+export function relationshipCase(name: string): RelationshipCase {
+  return findRelationship(loadParityFixtures(), name);
+}
+
+export function l2EntryCase(name: string): EntryCase {
+  return findEntry(loadL2ParityFixtures(), name);
+}
+
+export function l2RelationshipCase(name: string): RelationshipCase {
+  return findRelationship(loadL2ParityFixtures(), name);
 }

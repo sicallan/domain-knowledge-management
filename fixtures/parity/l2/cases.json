@@ -1,0 +1,303 @@
+{
+  "$comment": "Unified cross-validator fixture set for Phase 3.1 L2 vendor/project schemas (spec 001 Decision 3). Read by BOTH the Ajv (TypeScript) and jsonschema (Python) legs; every case must yield the same valid/invalid verdict in both. Invalid cases fail on format-agnostic keywords (required/enum/type/minItems/maximum/const) only, so the two ecosystems agree regardless of format-assertion settings; all uuid/date-time values are well-formed for the same reason. Note the deliberate name choices: productVersion (not 'version', which is the base-entry lifecycle version) and specType (not 'type', the base-entry discriminator) — mirroring the decisionType/eventType convention.",
+  "entries": [
+    {
+      "name": "VendorProduct/valid",
+      "type": "VendorProduct",
+      "expectValid": true,
+      "payload": {
+        "id": "d1b2c3d4-0001-4111-8111-000000000001",
+        "type": "VendorProduct",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "validTo": null,
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "location": "p.4", "fetchedAt": "2026-01-01T00:00:00Z", "sourceAuthority": "vendor" }],
+        "confidence": 0.86,
+        "name": "Acme FraudShield",
+        "vendor": "Acme Corp",
+        "productVersion": "12.3",
+        "capabilityClaims": ["real-time fraud scoring", "rule-based decisioning", "case management"]
+      }
+    },
+    {
+      "name": "VendorProduct/invalid-missing-vendor",
+      "type": "VendorProduct",
+      "expectValid": false,
+      "payload": {
+        "id": "d1b2c3d4-0002-4111-8111-000000000002",
+        "type": "VendorProduct",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "name": "Acme FraudShield",
+        "productVersion": "12.3"
+      }
+    },
+    {
+      "name": "VendorProduct/invalid-name-wrong-type",
+      "type": "VendorProduct",
+      "expectValid": false,
+      "payload": {
+        "id": "d1b2c3d4-0003-4111-8111-000000000003",
+        "type": "VendorProduct",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "name": 123,
+        "vendor": "Acme Corp"
+      }
+    },
+    {
+      "name": "VendorCapabilityMapping/valid",
+      "type": "VendorCapabilityMapping",
+      "expectValid": true,
+      "payload": {
+        "id": "d1b2c3d4-0004-4111-8111-000000000004",
+        "type": "VendorCapabilityMapping",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "validTo": null,
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "location": "p.7", "fetchedAt": "2026-01-01T00:00:00Z", "sourceAuthority": "vendor" }],
+        "confidence": 0.74,
+        "vendorCapability": "Real-time fraud scoring",
+        "mappedConcept": { "targetType": "BusinessCapability", "targetId": "cap-fraud-detection" },
+        "coverage": "partial",
+        "coveragePercentage": 70,
+        "gaps": ["no support for cross-border velocity rules"]
+      }
+    },
+    {
+      "name": "VendorCapabilityMapping/invalid-missing-coverage",
+      "type": "VendorCapabilityMapping",
+      "expectValid": false,
+      "payload": {
+        "id": "d1b2c3d4-0005-4111-8111-000000000005",
+        "type": "VendorCapabilityMapping",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "vendorCapability": "Real-time fraud scoring",
+        "mappedConcept": { "targetType": "BusinessCapability", "targetId": "cap-fraud-detection" }
+      }
+    },
+    {
+      "name": "VendorCapabilityMapping/invalid-bad-coverage-enum",
+      "type": "VendorCapabilityMapping",
+      "expectValid": false,
+      "payload": {
+        "id": "d1b2c3d4-0006-4111-8111-000000000006",
+        "type": "VendorCapabilityMapping",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "vendorCapability": "Real-time fraud scoring",
+        "mappedConcept": { "targetType": "BusinessCapability", "targetId": "cap-fraud-detection" },
+        "coverage": "maybe"
+      }
+    },
+    {
+      "name": "VendorCapabilityMapping/invalid-bad-mappedConcept-targetType",
+      "type": "VendorCapabilityMapping",
+      "expectValid": false,
+      "payload": {
+        "id": "d1b2c3d4-0007-4111-8111-000000000007",
+        "type": "VendorCapabilityMapping",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "vendorCapability": "Real-time fraud scoring",
+        "mappedConcept": { "targetType": "Service", "targetId": "svc-scoring" },
+        "coverage": "full"
+      }
+    },
+    {
+      "name": "VendorCapabilityMapping/invalid-coveragePercentage-out-of-range",
+      "type": "VendorCapabilityMapping",
+      "expectValid": false,
+      "payload": {
+        "id": "d1b2c3d4-0008-4111-8111-000000000008",
+        "type": "VendorCapabilityMapping",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "vendorCapability": "Real-time fraud scoring",
+        "mappedConcept": { "targetType": "DomainConcept", "targetId": "concept-fraud-score" },
+        "coverage": "full",
+        "coveragePercentage": 110
+      }
+    },
+    {
+      "name": "ProjectSpec/valid",
+      "type": "ProjectSpec",
+      "expectValid": true,
+      "payload": {
+        "id": "d1b2c3d4-0009-4111-8111-000000000009",
+        "type": "ProjectSpec",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "validTo": null,
+        "evidencedBy": [{ "source": "payments-prd-v2.md", "location": "§5", "fetchedAt": "2026-01-01T00:00:00Z", "sourceAuthority": "project" }],
+        "confidence": 0.9,
+        "name": "Real-time Authorisation PRD",
+        "specType": "requirement",
+        "status": "approved",
+        "addressedConcepts": ["concept-authorisation", "concept-risk-score"]
+      }
+    },
+    {
+      "name": "ProjectSpec/invalid-missing-specType",
+      "type": "ProjectSpec",
+      "expectValid": false,
+      "payload": {
+        "id": "d1b2c3d4-000a-4111-8111-00000000000a",
+        "type": "ProjectSpec",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "payments-prd-v2.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "name": "Real-time Authorisation PRD",
+        "status": "approved"
+      }
+    },
+    {
+      "name": "ProjectSpec/invalid-bad-specType-enum",
+      "type": "ProjectSpec",
+      "expectValid": false,
+      "payload": {
+        "id": "d1b2c3d4-000b-4111-8111-00000000000b",
+        "type": "ProjectSpec",
+        "version": "1.0.0",
+        "lifecycle_status": "active",
+        "validFrom": "2026-01-01T00:00:00Z",
+        "evidencedBy": [{ "source": "payments-prd-v2.md", "fetchedAt": "2026-01-01T00:00:00Z" }],
+        "name": "Real-time Authorisation PRD",
+        "specType": "RFC",
+        "status": "approved"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "name": "l2-structural/fulfils-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/l2-structural.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "e1b2c3d4-0001-4111-8111-000000000001",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "fulfils",
+        "sourceId": "product-acme-fraudshield",
+        "targetId": "cap-fraud-detection",
+        "sourceType": "VendorProduct",
+        "targetType": "BusinessCapability",
+        "direction": "directed",
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "l2-structural/fulfils-bad-target-endpoint",
+      "schemaId": "https://dkm.dev/schemas/relationships/l2-structural.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "e1b2c3d4-0002-4111-8111-000000000002",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "fulfils",
+        "sourceId": "product-acme-fraudshield",
+        "targetId": "concept-fraud-score",
+        "sourceType": "VendorProduct",
+        "targetType": "DomainConcept",
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "l2-structural/specifies-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/l2-structural.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "e1b2c3d4-0003-4111-8111-000000000003",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "specifies",
+        "sourceId": "spec-authorisation-prd",
+        "targetId": "concept-authorisation",
+        "sourceType": "ProjectSpec",
+        "targetType": "DomainConcept",
+        "evidencedBy": [{ "source": "payments-prd-v2.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "l2-structural/specifies-bad-source-endpoint",
+      "schemaId": "https://dkm.dev/schemas/relationships/l2-structural.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "e1b2c3d4-0004-4111-8111-000000000004",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "specifies",
+        "sourceId": "rule-daily-limit",
+        "targetId": "concept-authorisation",
+        "sourceType": "Rule",
+        "targetType": "DomainConcept",
+        "evidencedBy": [{ "source": "payments-prd-v2.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "l2-structural/realizesVendorCap-valid",
+      "schemaId": "https://dkm.dev/schemas/relationships/l2-structural.schema.json",
+      "expectValid": true,
+      "payload": {
+        "id": "e1b2c3d4-0005-4111-8111-000000000005",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "realizesVendorCap",
+        "sourceId": "svc-scoring",
+        "targetId": "mapping-fraud-scoring",
+        "sourceType": "Service",
+        "targetType": "VendorCapabilityMapping",
+        "evidencedBy": [{ "source": "system-landscape.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "l2-structural/realizesVendorCap-bad-target-endpoint",
+      "schemaId": "https://dkm.dev/schemas/relationships/l2-structural.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "e1b2c3d4-0006-4111-8111-000000000006",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "realizesVendorCap",
+        "sourceId": "svc-scoring",
+        "targetId": "svc-other",
+        "sourceType": "Service",
+        "targetType": "Service",
+        "evidencedBy": [{ "source": "system-landscape.md", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    },
+    {
+      "name": "l2-structural/invalid-kind-not-in-enum",
+      "schemaId": "https://dkm.dev/schemas/relationships/l2-structural.schema.json",
+      "expectValid": false,
+      "payload": {
+        "id": "e1b2c3d4-0007-4111-8111-000000000007",
+        "type": "Relationship",
+        "version": "1.0.0",
+        "relationshipType": "triggers",
+        "sourceId": "product-acme-fraudshield",
+        "targetId": "cap-fraud-detection",
+        "sourceType": "VendorProduct",
+        "targetType": "BusinessCapability",
+        "evidencedBy": [{ "source": "acme-fraud-datasheet.pdf", "fetchedAt": "2026-01-01T00:00:00Z" }]
+      }
+    }
+  ]
+}

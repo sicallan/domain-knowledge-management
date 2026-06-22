@@ -59,6 +59,30 @@ DECISION_SPECIFIC_RELATIONSHIP_TYPES: tuple[str, ...] = (
     "realizedBy",
 )
 
+# The L2 Functional-Realisation inventory types added by the Phase 3.2 vendor/project pass
+# (feature 02). Additive: these extend the available extraction ``targetTypes`` without modifying
+# any prior set (OCP). Each has a JSON Schema under ``/schemas/inventory/L2`` (shipped in 3.1).
+PHASE_3_L2_TYPES: tuple[str, ...] = (
+    "VendorProduct",
+    "VendorCapabilityMapping",
+    "ProjectSpec",
+)
+
+# The ``VendorCapabilityMapping`` type — the graded coverage node the Coverage Map / Gap views read
+# (D-P3.6). Named so the vendor pass and its coverage normalisation can reference it.
+VENDOR_CAPABILITY_MAPPING_TYPE = "VendorCapabilityMapping"
+
+# The L2 structural edge kinds (schemas/relationships/l2-structural.schema.json, shipped in 3.1).
+# These names are disjoint from the behavioural/decision sets, so the emit gate disambiguates them
+# by ``relationshipType`` alone (no shared/overloaded kind). ``realizesVendorCap`` has a Service
+# (L3) source that is not extractable yet, so — like the decision pass's ``realizedBy → Service`` —
+# it is a cross-pass placeholder exercised as a golden label, quarantined if wrong-typed.
+L2_STRUCTURAL_RELATIONSHIP_TYPES: tuple[str, ...] = (
+    "fulfils",
+    "specifies",
+    "realizesVendorCap",
+)
+
 RELATIONSHIP_TYPE = "Relationship"
 
 
@@ -243,6 +267,17 @@ class ExpectedRelationship(BaseModel):
     targetName: str
 
 
+class ExpectedCoverage(BaseModel):
+    """A labelled coverage claim: the true ``coverage`` for one vendor capability (D-P3.1).
+
+    Scored separately from entity presence because the ``coverage`` *value* is the
+    expensive-when-wrong signal (a false "covered" turns a real hole green).
+    """
+
+    vendorCapability: str
+    coverage: str  # one of {full, partial, none}
+
+
 class GoldenDataset(BaseModel):
     """Spec 005 §Golden Dataset Format."""
 
@@ -251,6 +286,8 @@ class GoldenDataset(BaseModel):
     documents: list[CanonicalDocument]
     expectedEntities: list[ExpectedEntity]
     expectedRelationships: list[ExpectedRelationship] = Field(default_factory=list)
+    # Phase 3.2: the labelled coverage values, scored by :func:`score_coverage_claims` (D-P3.1).
+    expectedCoverage: list[ExpectedCoverage] = Field(default_factory=list)
 
 
 class TypeMetrics(BaseModel):
@@ -276,3 +313,21 @@ class EvaluationMetrics(BaseModel):
     entities: CategoryMetrics
     relationships: CategoryMetrics
     confidenceCalibration: float  # reported as a sanity signal; not a Phase 1 gate
+
+
+class CoverageClaimMetrics(BaseModel):
+    """Coverage-claim accuracy (D-P3.1) — scored over ``VendorCapabilityMapping.coverage``.
+
+    Precision-first: ``coveredPrecision`` is the fraction of *covered* claims (``coverage ∈
+    {full, partial}``) whose labelled truth is also covered — the bar that stops a hole being shown
+    green. ``coveredRecall`` is modest by design (the review queue catches the rest).
+    ``autoMergeBandCoveredPrecision`` restricts that precision to predictions with ``confidence ≥
+    band`` — the strictest bar in the L2 layer. ``exactValueAccuracy`` (full vs partial vs none) is
+    reported as a sanity signal, not gated.
+    """
+
+    coveredPrecision: float
+    coveredRecall: float
+    autoMergeBandCoveredPrecision: float
+    exactValueAccuracy: float
+    support: int  # number of labelled coverage claims

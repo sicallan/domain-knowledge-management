@@ -26,7 +26,7 @@ from dkm_enrichment.models import (
 )
 from dkm_enrichment.pipeline import ExtractionPipeline
 
-from .conftest import behaviour_targets, scripted_router
+from .conftest import behaviour_targets, scripted_router, vendor_targets
 
 
 def _structural_doc() -> CanonicalDocument:
@@ -131,6 +131,24 @@ async def test_structural_consumes_survives_behavioural_gate_on_run(tmp_path: Pa
     # behavioural endpoint gate leaves it untouched.
     assert result.stats.quarantined == 0
     assert result.stats.relationshipsExtracted == 1
+
+
+async def test_enabling_l2_vendor_types_does_not_change_structural_extraction() -> None:
+    # OCP (feature 02 §10, criterion 8): adding the Phase 3.2 vendor/project pass is additive — the
+    # Phase 1 structural pass over the same doc is byte-identical with the L2 types turned on. The
+    # overloaded `consumes` canary again proves no prior edge is perturbed.
+    pipeline = ExtractionPipeline(FakeGateway(router=scripted_router(_structural_script())))
+
+    structural_only = await pipeline.extract_single(
+        _structural_doc(), ExtractionConfig(targetTypes=list(PHASE_0A_L1_TYPES))
+    )
+    with_l2 = await pipeline.extract_single(
+        _structural_doc(), ExtractionConfig(targetTypes=vendor_targets())
+    )
+
+    assert _entity_keys(structural_only) == _entity_keys(with_l2)
+    assert _rel_keys(structural_only) == _rel_keys(with_l2)
+    assert ("consumes", "Net Settlement", "Scheme Fee Table") in _rel_keys(with_l2)
 
 
 async def test_fake_gateway_keeps_the_pass_deterministic(tmp_path: Path) -> None:

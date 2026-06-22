@@ -22,6 +22,7 @@ from uuid import uuid4
 from dkm_enrichment.chunking import Chunk, chunk_document
 from dkm_enrichment.confidence import field_completeness, passes_gate, score_confidence
 from dkm_enrichment.emission import JsonlWriter
+from dkm_enrichment.entity_normalisation import normalise_entity_data
 from dkm_enrichment.entity_resolution import remap_relationship, resolve_entities
 from dkm_enrichment.extraction_schemas import (
     build_entity_result_schema,
@@ -32,6 +33,7 @@ from dkm_enrichment.models import (
     BEHAVIOURAL_RELATIONSHIP_TYPES,
     DECISION_SPECIFIC_RELATIONSHIP_TYPES,
     DECISION_TYPE,
+    L2_STRUCTURAL_RELATIONSHIP_TYPES,
     PHASE_2_BEHAVIOUR_TYPES,
     RELATIONSHIP_TYPE,
     CanonicalDocument,
@@ -220,6 +222,7 @@ class ExtractionPipeline:
             "sourceAuthority": document.sourceAuthority,
         }
         data: dict[str, Any] = {k: v for k, v in item.items() if k not in _META_FIELDS}
+        data = normalise_entity_data(type_name, data)
         data.update(
             {
                 "id": entry_id,
@@ -385,6 +388,20 @@ class ExtractionPipeline:
                     logger.info(
                         "Quarantined decision relationship %s (%s)", entry.id, rel_type
                     )
+                    continue
+            # An L2 functional-realisation edge (fulfils / specifies / realizesVendorCap). Its kinds
+            # are disjoint from the behavioural/decision sets, so membership alone selects the gate.
+            # D-P2.5: a wrong-typed endpoint (e.g. fulfils whose source isn't a VendorProduct), or a
+            # cross-pass placeholder not committed (e.g. realizesVendorCap → a not-yet-extracted
+            # Service), is quarantined — never written dangling.
+            elif rel_type in L2_STRUCTURAL_RELATIONSHIP_TYPES:
+                if not endpoints_committed or not (
+                    self._validator.validate_l2_structural_relationship(
+                        rel_type, source_type or "", target_type or ""
+                    ).valid
+                ):
+                    stats.quarantined += 1
+                    logger.info("Quarantined L2 relationship %s (%s)", entry.id, rel_type)
                     continue
             elif not endpoints_committed:
                 stats.validationFailures += 1

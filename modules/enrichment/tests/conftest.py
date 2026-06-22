@@ -20,6 +20,7 @@ from dkm_enrichment.gateway.base import ENTITY_RESULT_TITLE, RELATIONSHIP_RESULT
 from dkm_enrichment.models import (
     PHASE_0A_L1_TYPES,
     PHASE_2_BEHAVIOUR_TYPES,
+    PHASE_3_L2_TYPES,
     CanonicalDocument,
     DocumentSection,
     ExtractionConfig,
@@ -145,6 +146,17 @@ def decision_targets() -> list[str]:
     """
 
     return [*PHASE_0A_L1_TYPES, *PHASE_2_BEHAVIOUR_TYPES]
+
+
+def vendor_targets() -> list[str]:
+    """Targets for the Feature 02 (3.2) vendor/project pass.
+
+    The three L2 types plus the L1 endpoints its committed edges reach: ``BusinessCapability``
+    (``fulfils`` target) and ``DomainConcept`` (``specifies`` target), both already in
+    ``PHASE_0A_L1_TYPES``. Additive union — the prior passes' types are untouched (OCP).
+    """
+
+    return [*PHASE_0A_L1_TYPES, *PHASE_3_L2_TYPES]
 
 
 @pytest.fixture

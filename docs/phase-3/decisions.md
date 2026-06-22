@@ -80,6 +80,13 @@ golden instances; rarer types are reported but not gated. Inferred (vs explicitl
 emitted at **lower confidence** so it routes to the review queue rather than auto-merge.
 Resolves [feature 02 §11](../features/phase-3/02-vendor-mapping-extraction.md).
 
+> **Status — wired (3.2 shipped).** The `vendor_mapping` pass, the `vendor.v1.md` prompt, the
+> coverage-claim scorer (`evaluation.score_coverage_claims`) and the golden set
+> `evals/payments-vendor-golden/` now enforce these floors. The **deterministic** leg (FakeGateway
+> replay) is the CI regression gate on the prompt/script; the **real-Claude** leg (`pytest -m llm`,
+> `ANTHROPIC_API_KEY`) is the live accuracy gate and auto-skips in CI — its real-world verification is
+> tracked as a follow-up issue (per the CLAUDE.md CI rule).
+
 ## D-P3.2 — Coverage semantics: a `{full, partial, none}` enum plus an optional percentage
 
 Resolves [feature 01 §11 / feature 03 §11](../features/phase-3/03-coverage-view.md). `coverage` on

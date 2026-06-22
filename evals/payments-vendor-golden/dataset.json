@@ -1,0 +1,138 @@
+{
+  "id": "payments-vendor-golden-v1",
+  "name": "Payments vendor/project golden dataset (Phase 3.2)",
+  "documents": [
+    {
+      "id": "golden-acme-datasheet",
+      "file": "documents/acme-pay-datasheet.md",
+      "sourcePath": "vendors/acme-pay-datasheet.md",
+      "sourceAuthority": "vendor",
+      "title": "Acme Pay Gateway Datasheet"
+    },
+    {
+      "id": "golden-globex-matrix",
+      "file": "documents/globex-fraud-matrix.md",
+      "sourcePath": "vendors/globex-fraud-matrix.md",
+      "sourceAuthority": "vendor",
+      "title": "Globex Fraud Suite Coverage Matrix"
+    },
+    {
+      "id": "golden-settlement-pro",
+      "file": "documents/settlement-pro-datasheet.md",
+      "sourcePath": "vendors/settlement-pro-datasheet.md",
+      "sourceAuthority": "vendor",
+      "title": "Settlement Pro Datasheet"
+    },
+    {
+      "id": "golden-project-specs",
+      "file": "documents/authorisation-project-specs.md",
+      "sourcePath": "projects/authorisation-project-specs.md",
+      "sourceAuthority": "project",
+      "title": "Authorisation Project Specs"
+    }
+  ],
+  "expectedEntities": [
+    { "type": "VendorProduct", "name": "Acme Pay Gateway" },
+    { "type": "VendorProduct", "name": "Globex Fraud Suite" },
+    { "type": "VendorProduct", "name": "Settlement Pro" },
+
+    { "type": "BusinessCapability", "name": "Accept Card Payments" },
+    { "type": "BusinessCapability", "name": "Detect Fraud" },
+    { "type": "BusinessCapability", "name": "Reconcile Settlements" },
+
+    { "type": "VendorCapabilityMapping", "name": "Acme Card Authorisation" },
+    { "type": "VendorCapabilityMapping", "name": "Acme Network Tokenisation" },
+    { "type": "VendorCapabilityMapping", "name": "Globex Real-time Scoring" },
+    { "type": "VendorCapabilityMapping", "name": "Globex Device Fingerprinting" },
+    { "type": "VendorCapabilityMapping", "name": "Globex Chargeback Automation" },
+    { "type": "VendorCapabilityMapping", "name": "Initech Net Settlement" },
+
+    { "type": "ProjectSpec", "name": "Authorisation Hardening" },
+    { "type": "ProjectSpec", "name": "Refund Eligibility Requirement" },
+    { "type": "ProjectSpec", "name": "Settlement Routing ADR" },
+
+    { "type": "DomainConcept", "name": "Authorisation" },
+    { "type": "DomainConcept", "name": "Refund" },
+    { "type": "DomainConcept", "name": "Settlement" }
+  ],
+  "expectedRelationships": [
+    { "relationshipType": "fulfils", "sourceName": "Acme Pay Gateway", "targetName": "Accept Card Payments" },
+    { "relationshipType": "fulfils", "sourceName": "Globex Fraud Suite", "targetName": "Detect Fraud" },
+    { "relationshipType": "fulfils", "sourceName": "Settlement Pro", "targetName": "Reconcile Settlements" },
+
+    { "relationshipType": "specifies", "sourceName": "Authorisation Hardening", "targetName": "Authorisation" },
+    { "relationshipType": "specifies", "sourceName": "Refund Eligibility Requirement", "targetName": "Refund" },
+    { "relationshipType": "specifies", "sourceName": "Settlement Routing ADR", "targetName": "Settlement" },
+
+    { "relationshipType": "realizesVendorCap", "sourceName": "Authorisation Service", "targetName": "Acme Card Authorisation" },
+    { "relationshipType": "realizesVendorCap", "sourceName": "Fraud Service", "targetName": "Globex Real-time Scoring" },
+
+    { "relationshipType": "satisfiedBy", "sourceName": "PSD2 Strong Customer Authentication", "targetName": "Authorisation Hardening" }
+  ],
+  "expectedCoverage": [
+    { "vendorCapability": "Acme Card Authorisation", "coverage": "full" },
+    { "vendorCapability": "Acme Network Tokenisation", "coverage": "partial" },
+    { "vendorCapability": "Globex Real-time Scoring", "coverage": "full" },
+    { "vendorCapability": "Globex Device Fingerprinting", "coverage": "partial" },
+    { "vendorCapability": "Globex Chargeback Automation", "coverage": "none" },
+    { "vendorCapability": "Initech Net Settlement", "coverage": "full" }
+  ],
+  "extractionScript": {
+    "golden-acme-datasheet": {
+      "Acme Pay Gateway Datasheet": {
+        "entities": [
+          { "type": "VendorProduct", "name": "Acme Pay Gateway", "vendor": "Acme", "productVersion": "4.2", "capabilityClaims": ["Acme Card Authorisation", "Acme Network Tokenisation"], "confidence": 0.95 },
+          { "type": "BusinessCapability", "name": "Accept Card Payments", "description": "Take card payments from customers.", "confidence": 0.95 },
+          { "type": "VendorCapabilityMapping", "vendorCapability": "Acme Card Authorisation", "mappedConcept": { "targetType": "BusinessCapability", "targetId": "Accept Card Payments" }, "coverage": "full", "coveragePercentage": 100, "confidence": 0.95 },
+          { "type": "VendorCapabilityMapping", "vendorCapability": "Acme Network Tokenisation", "mappedConcept": { "targetType": "BusinessCapability", "targetId": "Accept Card Payments" }, "coverage": "partial", "coveragePercentage": 70, "gaps": ["Amex not covered", "domestic schemes not covered"], "confidence": 0.95 }
+        ],
+        "relationships": [
+          { "type": "fulfils", "source": "Acme Pay Gateway", "target": "Accept Card Payments", "confidence": 0.95 }
+        ]
+      }
+    },
+    "golden-globex-matrix": {
+      "Globex Fraud Suite Coverage Matrix": {
+        "entities": [
+          { "type": "VendorProduct", "name": "Globex Fraud Suite", "vendor": "Globex", "productVersion": "11", "capabilityClaims": ["Globex Real-time Scoring", "Globex Device Fingerprinting", "Globex Chargeback Automation"], "confidence": 0.95 },
+          { "type": "BusinessCapability", "name": "Detect Fraud", "description": "Identify and block fraudulent payments.", "confidence": 0.95 },
+          { "type": "VendorCapabilityMapping", "vendorCapability": "Globex Real-time Scoring", "mappedConcept": { "targetType": "BusinessCapability", "targetId": "Detect Fraud" }, "coverage": "full", "coveragePercentage": 100, "confidence": 0.95 },
+          { "type": "VendorCapabilityMapping", "vendorCapability": "Globex Device Fingerprinting", "mappedConcept": { "targetType": "BusinessCapability", "targetId": "Detect Fraud" }, "coverage": "partial", "coveragePercentage": 60, "gaps": ["no server-to-server tokens"], "confidence": 0.95 },
+          { "type": "VendorCapabilityMapping", "vendorCapability": "Globex Chargeback Automation", "mappedConcept": { "targetType": "BusinessCapability", "targetId": "Detect Fraud" }, "coverage": "none", "gaps": ["chargeback representment out of scope"], "confidence": 0.95 }
+        ],
+        "relationships": [
+          { "type": "fulfils", "source": "Globex Fraud Suite", "target": "Detect Fraud", "confidence": 0.95 }
+        ]
+      }
+    },
+    "golden-settlement-pro": {
+      "Settlement Pro Datasheet": {
+        "entities": [
+          { "type": "VendorProduct", "name": "Settlement Pro", "vendor": "Initech", "productVersion": "2.1", "capabilityClaims": ["Initech Net Settlement"], "confidence": 0.95 },
+          { "type": "BusinessCapability", "name": "Reconcile Settlements", "description": "Reconcile scheme settlement positions.", "confidence": 0.95 },
+          { "type": "VendorCapabilityMapping", "vendorCapability": "Initech Net Settlement", "mappedConcept": { "targetType": "BusinessCapability", "targetId": "Reconcile Settlements" }, "coverage": "full", "coveragePercentage": 100, "confidence": 0.95 }
+        ],
+        "relationships": [
+          { "type": "fulfils", "source": "Settlement Pro", "target": "Reconcile Settlements", "confidence": 0.95 }
+        ]
+      }
+    },
+    "golden-project-specs": {
+      "Authorisation Project Specs": {
+        "entities": [
+          { "type": "ProjectSpec", "name": "Authorisation Hardening", "specType": "design", "status": "approved", "addressedConcepts": ["Authorisation"], "confidence": 0.95 },
+          { "type": "ProjectSpec", "name": "Refund Eligibility Requirement", "specType": "requirement", "status": "approved", "addressedConcepts": ["Refund"], "confidence": 0.95 },
+          { "type": "ProjectSpec", "name": "Settlement Routing ADR", "specType": "ADR", "status": "accepted", "addressedConcepts": ["Settlement"], "confidence": 0.95 },
+          { "type": "DomainConcept", "name": "Authorisation", "conceptType": "aggregate", "description": "A card payment authorisation.", "confidence": 0.95 },
+          { "type": "DomainConcept", "name": "Refund", "conceptType": "aggregate", "description": "A return of funds against an original payment.", "confidence": 0.95 },
+          { "type": "DomainConcept", "name": "Settlement", "conceptType": "aggregate", "description": "Net or gross settlement of scheme positions.", "confidence": 0.95 }
+        ],
+        "relationships": [
+          { "type": "specifies", "source": "Authorisation Hardening", "target": "Authorisation", "confidence": 0.95 },
+          { "type": "specifies", "source": "Refund Eligibility Requirement", "target": "Refund", "confidence": 0.95 },
+          { "type": "specifies", "source": "Settlement Routing ADR", "target": "Settlement", "confidence": 0.95 }
+        ]
+      }
+    }
+  }
+}

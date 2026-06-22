@@ -29,6 +29,10 @@ BEHAVIOURAL_RELATIONSHIP_SCHEMA_ID = "https://dkm.dev/schemas/relationships/beha
 DECISION_SPECIFIC_RELATIONSHIP_SCHEMA_ID = (
     "https://dkm.dev/schemas/relationships/decision-specific.schema.json"
 )
+# The 3.1 L2 functional-realisation edge schema (fulfils / specifies / realizesVendorCap).
+L2_STRUCTURAL_RELATIONSHIP_SCHEMA_ID = (
+    "https://dkm.dev/schemas/relationships/l2-structural.schema.json"
+)
 
 
 def find_schemas_dir(start: Path | None = None) -> Path:
@@ -178,6 +182,34 @@ class SchemaValidator:
             "targetType": target_type,
         }
         return self.validate_against_schema_id(DECISION_SPECIFIC_RELATIONSHIP_SCHEMA_ID, edge)
+
+    def validate_l2_structural_relationship(
+        self, relationship_type: str, source_type: str, target_type: str
+    ) -> ValidationOutcome:
+        """Validate an L2 structural edge's endpoint types against ``l2-structural.schema.json``.
+
+        Mirrors :meth:`validate_decision_relationship`: the intermediate JSONL relationship form
+        (``sourceEntityId`` / ``targetEntityId``) is validated structurally elsewhere; here we check
+        that the edge's endpoint *inventory types* satisfy the 3.1 ``{sourceType, targetType}``
+        constraints for its ``relationshipType`` — ``fulfils`` ``VendorProduct →
+        BusinessCapability``, ``specifies`` ``ProjectSpec → DomainConcept``, ``realizesVendorCap``
+        ``Service → VendorCapabilityMapping``. Cardinality lives in the ``RelationshipTypeRegistry``
+        (D-P2.2), not here. We build the canonical graph-edge shape the schema expects and reuse
+        :meth:`validate_against_schema_id`.
+        """
+
+        edge = {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "type": RELATIONSHIP_TYPE,
+            "relationshipType": relationship_type,
+            "sourceId": "source",
+            "targetId": "target",
+            "version": "1.0.0",
+            "evidencedBy": [{"source": "extraction", "fetchedAt": "1970-01-01T00:00:00.000Z"}],
+            "sourceType": source_type,
+            "targetType": target_type,
+        }
+        return self.validate_against_schema_id(L2_STRUCTURAL_RELATIONSHIP_SCHEMA_ID, edge)
 
     def validate_relationship_data(self, data: dict[str, Any]) -> ValidationOutcome:
         """Validate the spec 003 intermediate relationship payload shape."""

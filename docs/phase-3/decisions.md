@@ -138,6 +138,43 @@ edges and `realizesVendorCap(Service → VendorCapabilityMapping)` pointing at i
 a **typed reference** `{ targetType: DomainConcept | BusinessCapability, targetId }`, so the realisation
 predicate (D-P3.3) resolves both concept- and capability-oriented mappings. Shipped in Feature 3.1.
 
+## D-P3.7 — Coverage Map cell attribution + the realisation predicate's two granularities (Features 3.3/3.4)
+
+Resolves the modelling gap the Coverage Map build surfaced: the shipped L2 schemas carry **no direct
+`VendorProduct → VendorCapabilityMapping` edge** (the edges are `fulfils`, `specifies`,
+`realizesVendorCap`), so a per-cell `(capability, vendor product)` coverage needs an explicit
+attribution rule. Locked, and shipped in Features 3.3/3.4 (`modules/view-projection`):
+
+- **Cell attribution by the vendor-capability name join.** A `VendorCapabilityMapping` fills the cell
+  `(row R, column P)` when `mapping.mappedConcept.targetId == R` **and** `mapping.vendorCapability ∈
+  P.capabilityClaims` — the schema's documented "resolved to L1 capabilities via VendorCapabilityMapping"
+  path (vendor-product.schema `capabilityClaims`). The `fulfils` edge stays the *thin* structural
+  assertion (and feeds the row predicate); the mapping node carries the *graded* coverage. No
+  attributable mapping ⇒ the cell is `uncovered` (precision-first, D-P3.1 — never a false "covered").
+  Several mappings in one cell roll up **worst-wins** with the **max** percentage (D-P3.2).
+  - *Known limitation (safe):* a `vendorCapability` name reused across vendors collides under the
+    name join (both products pick up both mappings). Worst-wins makes a collision **under-claim** the
+    cell (the conservative direction — never a false green), and the **row** predicate is unaffected
+    (it aggregates all of R's mappings regardless of column), so the gap/parity signal stays exact.
+    Real vendor capability names are vendor-scoped (datasheets say "Adyen Settlement", not "settlement"),
+    so collisions are an edge case; the exact product↔mapping link is deferred to an **additive
+    `vendorProduct` reference** on `VendorCapabilityMapping` when Feature 3.2's extraction needs it.
+- **The realisation predicate is row-level, not cell-level.** "Is R realised?" (D-P3.3) aggregates
+  *all* of R's edges/mappings, independent of any single product/column. Both the Coverage Map's
+  per-row `gap` flag and the Gap view's functional-gap set call **the same** `isFunctionallyRealised`
+  over **the same** gathered inputs (`readElementRealisation`), which is what makes the parity test
+  (D-P3.3, the release blocker) hold regardless of cell-level display nuance. A row is `covered` only
+  with a `full` mapping, `partial` when realised without one, `uncovered` ⇔ not functionally realised.
+- **Summary `coveragePercentage` is a weighted row score** (covered=1, partial=0.5, uncovered=0,
+  rounded to 0–100) — a roll-up of row statuses, distinct from a cell's per-mapping percentage.
+- **Extraction (3.2) must pair a `fulfils` edge with a graded mapping.** A bare `fulfils` with no
+  mapping is degenerate (the row reads realised but every cell shows uncovered); the vendor pass emits
+  the thin edge and the rich node together.
+
+The 3.3/3.4 "deferred-to-the-feature" defaults below were all taken **as recommended**: Markdown RAG
+matrix render, `BusinessCapability` default rows + a `DomainConcept` mode (via an additive `rowKind`
+param), a deterministic (non-LLM) Gap projector, and prioritisation by incoming-edge (dependent) count.
+
 ---
 
 ## Deferred to their own feature (default = the doc's recommendation)

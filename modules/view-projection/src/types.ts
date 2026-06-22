@@ -220,3 +220,125 @@ export interface BehaviourFlowView {
   flow: BehaviourFlowHeader;
   steps: BehaviourFlowStep[];
 }
+
+// ---------------------------------------------------------------------------
+// Vendor Coverage Map view (Phase 3 feature 03 §7). Spec 007 lists the view
+// (viewType `vendor-coverage`) but leaves the output schema to this feature,
+// mirroring the Domain Map / Behaviour Flow precedent. Additive only — fields
+// may grow but never change until a Phase 3 GraphQL contract pins it (D-P3.2).
+// ---------------------------------------------------------------------------
+
+/** A cell's coverage status — maps 1:1 from `coverage ∈ {full,partial,none}` (D-P3.2). */
+export type CoverageStatus = "covered" | "partial" | "uncovered";
+
+/** The L1 element kind that forms the matrix rows. */
+export type CoverageRowKind = "BusinessCapability" | "DomainConcept";
+
+/**
+ * A matrix row — an L1 capability/concept. `status` is its roll-up across all
+ * vendor mappings/edges and `gap` (⇔ `status === "uncovered"`) is the per-row gap
+ * flag (criterion 4); both are driven by the shared realisation predicate so they
+ * agree with the Gap view (D-P3.3). `status`/`gap` are additive to spec 007's
+ * `{id,name,kind}` row.
+ */
+export interface VendorCoverageRow {
+  id: string;
+  name: string;
+  kind: CoverageRowKind;
+  /** The row's overall coverage roll-up (covered ⇔ a `full` mapping; partial ⇔ realised, no full). */
+  status: CoverageStatus;
+  /** Per-row gap flag — true ⇔ the row is functionally unrealised (`status === "uncovered"`). */
+  gap: boolean;
+  /** The row's domain, when the node carries one (drives the `domain` filter). */
+  domain?: string;
+}
+
+/** A matrix column — a vendor product. */
+export interface VendorCoverageColumn {
+  id: string;
+  name: string;
+  vendor: string;
+}
+
+/** A single matrix cell: how well one vendor product (column) covers one capability (row). */
+export interface VendorCoverageCell {
+  rowId: string;
+  columnId: string;
+  status: CoverageStatus;
+  coveragePercentage?: number;
+  mappingId?: string;
+  gaps?: string[];
+}
+
+/** Matrix totals (criterion 4). */
+export interface VendorCoverageSummary {
+  totalCapabilities: number;
+  covered: number;
+  partial: number;
+  uncovered: number;
+  /** Weighted overall coverage: covered=1, partial=0.5, uncovered=0, as a 0–100 percentage. */
+  coveragePercentage: number;
+}
+
+/** The Vendor Coverage Map view output (feature 03 §7). */
+export interface VendorCoverageView {
+  rows: VendorCoverageRow[];
+  columns: VendorCoverageColumn[];
+  cells: VendorCoverageCell[];
+  summary: VendorCoverageSummary;
+}
+
+/** Parameters accepted by the Vendor Coverage projector (feature 03 §7). */
+export interface VendorCoverageParams {
+  /** Restrict columns to one vendor (matched on the product's `vendor`, id or name). */
+  vendor?: string;
+  /** Restrict rows to one domain (matched on the row node's `domain`/`subdomain`). */
+  domain?: string;
+  /** Additive (OCP-open): which L1 element kind forms the rows. Defaults to `BusinessCapability`. */
+  rowKind?: CoverageRowKind;
+}
+
+// ---------------------------------------------------------------------------
+// Gap Analysis view (Phase 3 feature 04 §7). The deterministic inverse of the
+// Coverage Map — it consumes the SAME realisation predicate (D-P3.3), so the two
+// can never disagree. Additive only.
+// ---------------------------------------------------------------------------
+
+/** A realisation layer an L1 element can be missing. */
+export type RealisationLayer = "L2" | "L3";
+
+/** A single gap: an L1 element with at least one absent realisation layer. */
+export interface GapAnalysisGap {
+  id: string;
+  name: string;
+  kind: CoverageRowKind;
+  domain?: string;
+  /** Which realisation is absent — `L2` (functional) and/or `L3` (technical). */
+  missingLayers: RealisationLayer[];
+  /** Deterministic rank: the element's incoming-edge (dependent) count; higher = more depended-upon. */
+  priority: number;
+  /** Human-readable, computed explanation of the gap. */
+  reason: string;
+}
+
+/** Gap totals over the assessed population (independent of the `layer` filter). */
+export interface GapAnalysisSummary {
+  totalAssessed: number;
+  functionalGaps: number;
+  technicalGaps: number;
+  fullyRealised: number;
+}
+
+/** The Gap Analysis view output (feature 04 §7). */
+export interface GapAnalysisView {
+  gaps: GapAnalysisGap[];
+  summary: GapAnalysisSummary;
+}
+
+/** Parameters accepted by the Gap Analysis projector (feature 04 §7). */
+export interface GapAnalysisParams {
+  /** Restrict assessment to one domain (matched on the element node's `domain`/`subdomain`). */
+  domain?: string;
+  /** Which gaps to list: functional (no L2), technical (no L3), or both. Defaults to `both`. */
+  layer?: "functional" | "technical" | "both";
+}

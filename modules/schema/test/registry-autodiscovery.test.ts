@@ -28,3 +28,24 @@ describe("SchemaRegistry — auto-discovers the new L3 behaviour types (OCP)", (
     }
   });
 });
+
+/**
+ * Feature 3.1 — acceptance criterion 7 (OCP gate). Dropping the three new L2 vendor/project
+ * schema files into a brand-new schemas/inventory/L2 directory makes them discoverable with
+ * ZERO edits to the registry code or any manifest — `layerFromPath` already recognises L2.
+ */
+describe("SchemaRegistry — auto-discovers the new L2 vendor/project types (OCP)", () => {
+  const registry = loadDefaultRegistry();
+  const l2Types = ["VendorProduct", "VendorCapabilityMapping", "ProjectSpec"];
+
+  for (const type of l2Types) {
+    it(`hasType('${type}') is true and listTypes() includes it`, () => {
+      expect(registry.hasType(type)).toBe(true);
+      expect(registry.listTypes().map((t) => t.type)).toContain(type);
+    });
+
+    it(`reports '${type}' at layer L2`, () => {
+      expect(registry.layerOf(type)).toBe("L2");
+    });
+  }
+});

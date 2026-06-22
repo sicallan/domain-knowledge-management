@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L2/vendor-capability-mapping.schema.json",
+  "title": "VendorCapabilityMapping",
+  "description": "L2 — A first-class, evidenced assertion that a vendor capability maps onto an L1 domain concept or business capability, with an explicit coverage level and named gaps. The unit the Coverage Map and Gap Analysis views read.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["vendorCapability", "mappedConcept", "coverage"],
+  "properties": {
+    "type": { "const": "VendorCapabilityMapping" },
+    "vendorCapability": { "type": "string", "minLength": 1, "description": "The vendor-side capability name being mapped." },
+    "mappedConcept": {
+      "type": "object",
+      "description": "Typed reference to the L1 element this vendor capability claims to cover.",
+      "required": ["targetType", "targetId"],
+      "properties": {
+        "targetType": { "type": "string", "enum": ["DomainConcept", "BusinessCapability"] },
+        "targetId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "coverage": {
+      "type": "string",
+      "enum": ["full", "partial", "none"],
+      "description": "Coverage level — maps 1:1 onto the Coverage Map cell status covered|partial|uncovered."
+    },
+    "coveragePercentage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Optional numeric coverage estimate (0–100), where stated by the source."
+    },
+    "gaps": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Named shortfalls — what the vendor capability does NOT cover for this concept."
+    }
+  }
+}

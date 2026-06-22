@@ -10,9 +10,11 @@ export {
   RelationshipTypeRegistry,
   registerBehaviouralRelationships,
   registerCrossLayerRelationships,
+  registerL2Relationships,
   createFullRelationshipRegistry,
   BEHAVIOURAL_RELATIONSHIP_DEFS,
   CROSS_LAYER_RELATIONSHIP_DEFS,
+  L2_STRUCTURAL_RELATIONSHIP_DEFS,
 } from "./relationships";
 export type { RelationshipTypeDef } from "./relationships";
 

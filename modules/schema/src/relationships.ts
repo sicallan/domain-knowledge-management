@@ -75,6 +75,21 @@ export const CROSS_LAYER_RELATIONSHIP_DEFS: RelationshipTypeDef[] = [
 ];
 
 /**
+ * L2 structural edge types (plan.md §Structural). Phase 3.1 adds these additively — the
+ * functional-realisation edges that link vendor/project (L2) entries to the L1 they claim
+ * to fulfil. Endpoint types come from plan.md; cardinalities are unbounded with no minimum
+ * (an L1 capability may be fulfilled by zero or many vendor products — completeness is the
+ * Gap Analysis view's concern, not a structural requirement). Endpoint-typed at the link
+ * gate (a decision/realisation's traceability is the high-value cross-layer signal — same
+ * scoping as the decision-specific + regulatory edges).
+ */
+export const L2_STRUCTURAL_RELATIONSHIP_DEFS: RelationshipTypeDef[] = [
+  { name: "fulfils", sourceTypes: ["VendorProduct"], targetTypes: ["BusinessCapability"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "VendorProduct → BusinessCapability" },
+  { name: "specifies", sourceTypes: ["ProjectSpec"], targetTypes: ["DomainConcept"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "ProjectSpec → DomainConcept" },
+  { name: "realizesVendorCap", sourceTypes: ["Service"], targetTypes: ["VendorCapabilityMapping"], maxTargetsPerSource: "unbounded", minTargetsPerSource: 0, description: "Service → VendorCapabilityMapping" },
+];
+
+/**
  * RelationshipTypeRegistry — declares cardinality constraints per relationship type.
  * New edge types register via `register()` without modifying existing logic (OCP).
  * Unknown relationship types carry no cardinality constraint (valid by default).
@@ -179,6 +194,16 @@ export function registerCrossLayerRelationships(registry: RelationshipTypeRegist
 }
 
 /**
+ * Register the L2 structural edge types (plan.md §Structural) onto a registry. Pure
+ * extension via `register()` — the shipped DEFAULT_DEFS are never modified (OCP).
+ */
+export function registerL2Relationships(registry: RelationshipTypeRegistry): void {
+  for (const def of L2_STRUCTURAL_RELATIONSHIP_DEFS) {
+    registry.register(def);
+  }
+}
+
+/**
  * The single shared rule set the loader / link gate consumes (D-P2.2): the shipped
  * decision-specific + structural defaults, plus the behavioural and cross-layer edge types,
  * registered additively. The same **cardinality** rules (`canAddEdge`, `checkMinimum`,
@@ -203,6 +228,9 @@ export function createFullRelationshipRegistry(): RelationshipTypeRegistry {
     });
   }
   registerCrossLayerRelationships(registry);
+  // L2 structural edges are endpoint-typed at the link gate (functional-realisation
+  // traceability — same high-value cross-layer signal as the regulatory edges).
+  registerL2Relationships(registry);
   return registry;
 }
 

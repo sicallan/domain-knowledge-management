@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L2/vendor-product.schema.json",
+  "title": "VendorProduct",
+  "description": "L2 — A commercial product claiming to realise one or more L1 business capabilities. `productVersion` is the vendor's product version, kept distinct from the base-entry `version` (this entry definition's lifecycle version). Links to the capabilities it claims are modelled as `fulfils` relationships, not entry fields.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name", "vendor"],
+  "properties": {
+    "type": { "const": "VendorProduct" },
+    "name": { "type": "string", "minLength": 1 },
+    "vendor": { "type": "string", "minLength": 1, "description": "The supplying organisation." },
+    "productVersion": { "type": "string", "description": "The vendor's product version (NOT the base-entry lifecycle version)." },
+    "capabilityClaims": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Free-text capability claims the vendor asserts; resolved to L1 capabilities via VendorCapabilityMapping + fulfils edges."
+    }
+  }
+}

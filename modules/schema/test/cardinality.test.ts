@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   BEHAVIOURAL_RELATIONSHIP_DEFS,
+  L2_STRUCTURAL_RELATIONSHIP_DEFS,
   RelationshipTypeRegistry,
+  createFullRelationshipRegistry,
   registerBehaviouralRelationships,
+  registerL2Relationships,
 } from "../src/index";
 
 describe("RelationshipTypeRegistry — cardinality enforcement", () => {
@@ -82,6 +85,54 @@ describe("RelationshipTypeRegistry — behavioural edge registration (additive)"
     registerBehaviouralRelationships(reg);
     expect(reg.checkMinimum("evaluates", 0).valid).toBe(false);
     expect(reg.checkMinimum("produces", 0).valid).toBe(false);
+  });
+});
+
+// Feature 3.1 — L2 structural edge types are added additively via register() (OCP).
+describe("RelationshipTypeRegistry — L2 structural edge registration (additive)", () => {
+  it("the default registry does not carry the L2 edge types out of the box", () => {
+    const reg = new RelationshipTypeRegistry();
+    for (const name of ["fulfils", "specifies", "realizesVendorCap"]) {
+      expect(reg.has(name)).toBe(false);
+    }
+  });
+
+  it("registers exactly the three L2 structural edge types", () => {
+    const reg = new RelationshipTypeRegistry();
+    registerL2Relationships(reg);
+    for (const def of L2_STRUCTURAL_RELATIONSHIP_DEFS) {
+      expect(reg.has(def.name)).toBe(true);
+    }
+    expect(L2_STRUCTURAL_RELATIONSHIP_DEFS.map((d) => d.name).sort()).toEqual(
+      ["fulfils", "realizesVendorCap", "specifies"],
+    );
+  });
+
+  it("carries the endpoint types in the L2 defs (link-gate typing)", () => {
+    const reg = new RelationshipTypeRegistry();
+    registerL2Relationships(reg);
+    expect(reg.get("fulfils")?.sourceTypes).toContain("VendorProduct");
+    expect(reg.get("fulfils")?.targetTypes).toContain("BusinessCapability");
+    expect(reg.get("realizesVendorCap")?.targetTypes).toContain("VendorCapabilityMapping");
+  });
+
+  it("does not touch the previously-shipped DEFAULT_DEFS (evaluates/produces still enforced)", () => {
+    const reg = new RelationshipTypeRegistry();
+    registerL2Relationships(reg);
+    expect(reg.checkMinimum("evaluates", 0).valid).toBe(false);
+    expect(reg.checkMinimum("produces", 0).valid).toBe(false);
+  });
+
+  it("the full registry includes the L2 edges alongside behavioural + cross-layer (criterion 9)", () => {
+    const reg = createFullRelationshipRegistry();
+    for (const name of ["fulfils", "specifies", "realizesVendorCap"]) {
+      expect(reg.has(name)).toBe(true);
+    }
+    // shared rule set still enforces the shipped decision minimums
+    expect(reg.checkMinimum("evaluates", 0).valid).toBe(false);
+    // and still carries the cross-layer + behavioural names
+    expect(reg.has("satisfiedBy")).toBe(true);
+    expect(reg.has("triggers")).toBe(true);
   });
 });
 

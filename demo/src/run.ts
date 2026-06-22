@@ -16,6 +16,7 @@ import {
   renderBehaviourFlow,
   summariseBehaviour,
 } from "./behaviour-flow-exporter";
+import { buildCoverageGapDemo } from "./coverage-gap-exporter";
 
 /**
  * One-command Payments demo. It runs the **real** pipeline end to end:
@@ -44,6 +45,8 @@ const PNG = "payments-domain-map.png";
 const VIEW_JSON = "payments-domain-map.json";
 const BEHAVIOUR_PUML = "payments-behaviour-flow.puml";
 const BEHAVIOUR_PNG = "payments-behaviour-flow.png";
+const COVERAGE_MD = "payments-coverage-map.md";
+const GAP_MD = "payments-gap-analysis.md";
 
 const CONTEXT: QueryContext = {
   userId: "demo",
@@ -154,6 +157,23 @@ async function main(): Promise<void> {
   } else {
     console.log("  (no orchestration flows in the graph — nothing to render)");
   }
+
+  // 7 — Phase 3: the L2 coverage & gap story, projected by the two new view projectors.
+  console.log("▶ Phase 3 — Vendor Coverage Map + Gap Analysis (views 3.3/3.4, one shared predicate):");
+  const coverageGap = await buildCoverageGapDemo();
+  console.log(
+    `  coverage ${coverageGap.coverage.summary.coveragePercentage}% — ` +
+      `${coverageGap.coverage.summary.covered} covered · ${coverageGap.coverage.summary.partial} partial · ` +
+      `${coverageGap.coverage.summary.uncovered} uncovered of ${coverageGap.coverage.summary.totalCapabilities} capabilities ` +
+      `(${coverageGap.coverage.columns.length} vendor products)`,
+  );
+  console.log(
+    `  gaps — ${coverageGap.gaps.summary.functionalGaps} functional · ${coverageGap.gaps.summary.technicalGaps} technical · ` +
+      `${coverageGap.gaps.summary.fullyRealised} fully realised of ${coverageGap.gaps.summary.totalAssessed} assessed`,
+  );
+  writeFileSync(join(demoDir, COVERAGE_MD), `${coverageGap.coverageMarkdown}\n`, "utf8");
+  writeFileSync(join(demoDir, GAP_MD), `${coverageGap.gapMarkdown}\n`, "utf8");
+  console.log(`▶ Wrote demo/${COVERAGE_MD} and demo/${GAP_MD} (the RAG coverage matrix + the ranked gap list)`);
 
   console.log("✓ Demo complete.");
 }

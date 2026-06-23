@@ -15,6 +15,7 @@
     "@dkm/api-gateway": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.2",
     "clsx": "^2.1.1",
+    "cytoscape": "^3.30.0",
     "graphql": "^16.9.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import type { BreadcrumbItem } from "./shell/types";
 
+/** A minimal summary of the selected entry (the canvas/list have this from the node data). */
+export interface SelectedEntry {
+  id: string;
+  type?: string;
+  label?: string;
+}
+
 /**
  * The shell's client-state store (UI-D7 pin: Zustand). It holds **presentation** state
  * only — the open/closed context panel, the current selection, the breadcrumb trail, and
@@ -11,15 +18,15 @@ import type { BreadcrumbItem } from "./shell/types";
 export interface ShellState {
   /** Whether the slide-out context panel is open. */
   panelOpen: boolean;
-  /** The entry the context panel is inspecting (content rendered by UI-3.6). */
-  selectedEntryId: string | null;
+  /** The entry the context panel is inspecting (full detail rendered by UI-3.6). */
+  selectedEntry: SelectedEntry | null;
   /** The traversal breadcrumb trail. */
   trail: BreadcrumbItem[];
   /** The last structured-search query dispatched from the search bar (UI-3.5 fulfils). */
   lastSearch: string | null;
 
   /** Select an entry from anywhere (canvas, list, search) → opens the context panel. */
-  selectEntry: (id: string, crumb?: BreadcrumbItem) => void;
+  selectEntry: (entry: SelectedEntry, crumb?: BreadcrumbItem) => void;
   /** Dismiss the context panel (Esc / click-away / close button). */
   closePanel: () => void;
   /** Dispatch a structured search action with the query (the UI-3.1 search contract). */
@@ -30,13 +37,13 @@ export interface ShellState {
 
 export const useShellStore = create<ShellState>((set) => ({
   panelOpen: false,
-  selectedEntryId: null,
+  selectedEntry: null,
   trail: [],
   lastSearch: null,
 
-  selectEntry: (id, crumb) =>
+  selectEntry: (entry, crumb) =>
     set((state) => ({
-      selectedEntryId: id,
+      selectedEntry: entry,
       panelOpen: true,
       trail: crumb ? [...state.trail, crumb] : state.trail,
     })),

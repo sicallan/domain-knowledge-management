@@ -6,6 +6,7 @@ import { NavMenu } from "./NavMenu";
 import { NotificationCentre } from "./NotificationCentre";
 import { SAMPLE_NOTIFICATIONS } from "./sample-data";
 import { SearchBar } from "./SearchBar";
+import { SelectedEntrySummary } from "./SelectedEntrySummary";
 
 /**
  * The persistent application frame (UI-3.1) every screen mounts in: a nav rail, a header
@@ -19,6 +20,7 @@ export function AppLayout() {
   const closePanel = useShellStore((state) => state.closePanel);
   const trail = useShellStore((state) => state.trail);
   const dispatchSearch = useShellStore((state) => state.dispatchSearch);
+  const selectedEntry = useShellStore((state) => state.selectedEntry);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -47,7 +49,9 @@ export function AppLayout() {
         </main>
       </div>
 
-      <ContextPanelSlot open={panelOpen} onClose={closePanel} />
+      <ContextPanelSlot open={panelOpen} onClose={closePanel}>
+        {selectedEntry && <SelectedEntrySummary entry={selectedEntry} />}
+      </ContextPanelSlot>
     </div>
   );
 }

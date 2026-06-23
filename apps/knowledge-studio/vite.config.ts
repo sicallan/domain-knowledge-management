@@ -9,5 +9,12 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   plugins: [react(), tsconfigPaths({ root: fileURLToPath(new URL("../..", import.meta.url)) })],
   resolve: { dedupe: ["graphql", "react", "react-dom"] },
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    // Same-origin `/graphql` → the @dkm/api-gateway dev server (no CORS). Override the
+    // gateway target with VITE_GRAPHQL_PROXY if it runs on another port.
+    proxy: {
+      "/graphql": process.env.VITE_GRAPHQL_PROXY ?? "http://localhost:4000",
+    },
+  },
 });

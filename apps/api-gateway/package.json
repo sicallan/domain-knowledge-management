@@ -1,0 +1,35 @@
+{
+  "name": "@dkm/api-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GraphQL API gateway (UI-3.2): a thin Yoga + Pothos server that projects the @dkm/query Query Interface and the @dkm/view-projection engine over GraphQL. SDL-as-contract (snapshot-tested); resolvers tested over the in-memory graph adapter, seeded from demo/*.jsonl via the shared seedInMemoryGraph(). Adapter-over-port (UI-D3) — no store reach-through.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./seed": "./src/seed.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "print-sdl": "tsx src/schema/print-sdl.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@dkm/schema": "workspace:*",
+    "@dkm/knowledge-graph": "workspace:*",
+    "@dkm/loaders": "workspace:*",
+    "@dkm/query": "workspace:*",
+    "@dkm/view-projection": "workspace:*",
+    "@pothos/core": "^4.3.0",
+    "graphql": "^16.9.0",
+    "graphql-yoga": "^5.10.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "vitest": "^2.1.8",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}

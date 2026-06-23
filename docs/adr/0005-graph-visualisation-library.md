@@ -1,6 +1,6 @@
-# ADR-0005 — Graph visualisation library (draft — Cytoscape.js recommended)
+# ADR-0005 — Graph visualisation library
 
-- **Status**: Proposed (draft — ratify at UI-3.4 kickoff)
+- **Status**: Accepted (ratified at UI-3.1 kickoff, 2026-06-22; applies at UI-3.4)
 - **Date**: 2026-06-22
 - **Deciders**: Platform architecture (UI/Backend track)
 - **Related**: [ui-backend-plan.md §Tech Stack Decision Strategy](../../ui-backend-plan.md), [ADR-0004](./0004-ui-framework.md) (UI framework — the host), [ADR-0006](./0006-graphql-server-framework.md) (data source), [specs/008 — Query Interface](../../specs/README.md), Phase 3 coverage/gap views (`modules/view-projection`)
@@ -18,7 +18,7 @@ Note the platform already emits **PlantUML** renders for behaviour flows (Phase 
 matrices** for coverage/gap (Phase 3) — those static renders stay; this ADR is only about the
 **interactive** explorer canvas.
 
-## Decision (recommended default)
+## Decision
 
 **Cytoscape.js** (via a thin React wrapper) for the interactive graph canvas, with **Sigma.js +
 graphology** named as the **WebGL escalation path** if node counts outgrow Cytoscape's SVG/canvas
@@ -43,10 +43,10 @@ kickoff: D3 (low-level, maximum control, highest build cost).
 
 ## Consequences
 
-- **Now (draft)**: records direction; no dependency added. The view-data the canvas will read already
-  exists (`modules/view-projection`, the Query Interface port).
-- **On ratification**: add Cytoscape (+ wrapper) under `apps/knowledge-studio`; define the
-  graph-data adapter as the boundary so Sigma.js remains a drop-in escalation.
+- **Ratified (2026-06-22)**: Cytoscape.js (thin React wrapper) is the interactive-canvas library; the
+  view-data it reads already exists (`modules/view-projection`, the Query Interface port).
+- **Next**: add Cytoscape (+ wrapper) under `apps/knowledge-studio` at UI-3.4; define the graph-data
+  adapter as the boundary so Sigma.js remains a drop-in WebGL escalation.
 - **Trigger to escalate to WebGL**: interactive graphs that routinely exceed a few thousand visible
   nodes/edges with unacceptable layout/pan/zoom latency.
 - **Not decided here**: exact layout defaults and node/edge visual encoding — UI-3.4 feature-doc detail.

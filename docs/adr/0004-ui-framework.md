@@ -1,6 +1,6 @@
-# ADR-0004 — UI framework for the Knowledge Studio (draft — React recommended)
+# ADR-0004 — UI framework for the Knowledge Studio
 
-- **Status**: Proposed (draft — ratify at UI-3.1 kickoff)
+- **Status**: Accepted (ratified at UI-3.1 kickoff, 2026-06-22)
 - **Date**: 2026-06-22
 - **Deciders**: Platform architecture (UI/Backend track)
 - **Related**: [ui-backend-plan.md §Tech Stack Decision Strategy](../../ui-backend-plan.md), [Phase 3 decisions *Deferred*](../phase-3/decisions.md), CLAUDE.md *Architecture commitments* (TypeScript for UI), sibling drafts [ADR-0005](./0005-graph-visualisation-library.md) (graph viz), [ADR-0006](./0006-graphql-server-framework.md) (GraphQL server), [ADR-0007](./0007-component-library.md) (component library)
@@ -17,9 +17,9 @@ UI to **TypeScript**, so the choice is among TS-first frameworks.
 This decision is the **anchor** of the four UI ADRs: it constrains which graph-viz bindings
 (ADR-0005) and which component library (ADR-0007) are ergonomic, so it is ratified first.
 
-## Decision (recommended default)
+## Decision
 
-**React (with TypeScript, Vite build).** Alternatives kept on the table for the kickoff discussion:
+**React (with TypeScript, Vite build).** Alternatives weighed at the kickoff and not taken:
 Vue 3, Svelte 5, SolidJS.
 
 ## Rationale
@@ -37,11 +37,10 @@ thinner graph-viz/component ecosystem — the dominant criterion for a relations
 
 ## Consequences
 
-- **Now (draft)**: no code committed; this records the recommended direction so ADR-0005/0007 can be
-  drafted against a concrete host. The domain/core and the GraphQL contract (ADR-0006) stay
-  framework-agnostic — a different framework choice at kickoff would not touch them.
-- **On ratification**: scaffold `apps/knowledge-studio` (Vite + React + TS); pin the choice to
-  *Accepted* and supersede this draft.
+- **Ratified (2026-06-22)**: React (Vite + TS) is the anchor host for the four UI ADRs. The
+  domain/core and the GraphQL contract (ADR-0006) stay framework-agnostic — a later framework change
+  would not touch them.
+- **Next**: scaffold `apps/knowledge-studio` (Vite + React + TS) at UI-3.1.
 - **Trigger to reconsider**: a graph-viz or accessibility requirement that a non-React framework
   serves materially better, surfaced during UI-3.4 (Knowledge Explorer).
 - **Not decided here**: routing, state management, and data-fetching client — secondary choices that

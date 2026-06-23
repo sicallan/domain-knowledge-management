@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @dkm/knowledge-studio run typecheck",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",

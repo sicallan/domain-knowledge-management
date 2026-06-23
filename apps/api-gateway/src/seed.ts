@@ -1,0 +1,77 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { InMemoryGraphAdapter } from "@dkm/knowledge-graph";
+import type { GraphPort } from "@dkm/knowledge-graph";
+import { concatJsonl, GraphLoader } from "@dkm/loaders";
+import type { LoadResult } from "@dkm/loaders";
+import { GraphQueryService } from "@dkm/query";
+import type { QueryService } from "@dkm/query";
+import {
+  BehaviourFlowProjector,
+  DefaultViewEngine,
+  DomainMapProjector,
+  GapAnalysisProjector,
+  VendorCoverageProjector,
+} from "@dkm/view-projection";
+import type { ViewEngine } from "@dkm/view-projection";
+
+/**
+ * The canonical Payments seed paths. Single source of truth (UI-D2): the dev server,
+ * the resolver tests, and the studio's MSW handlers all seed from these same files.
+ */
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const DEMO_DIR = join(repoRoot, "demo");
+export const SEED_JSONL_PATHS = [
+  join(DEMO_DIR, "payments-extractions.jsonl"),
+  join(DEMO_DIR, "payments-relationships.jsonl"),
+] as const;
+
+/** The injectable read-path backend the gateway resolvers delegate to (UI-D3). */
+export interface SeededBackend {
+  /** The ephemeral in-memory store the seed was loaded into. */
+  graph: GraphPort;
+  /** The Query Interface (entry/entries/traverse/paths) over {@link graph}. */
+  queryService: QueryService;
+  /** The View Projection engine with the four Phase-1–3 projectors registered. */
+  views: ViewEngine;
+  /** The loader's report — `loaded`/`skipped`/`failed` counts for the seed. */
+  loadResult: LoadResult;
+}
+
+export interface SeedOptions {
+  /** Override the JSONL files to seed from (defaults to the Payments demo seed). */
+  jsonlPaths?: readonly string[];
+  /** A pre-built graph to load into (defaults to a fresh {@link InMemoryGraphAdapter}). */
+  graph?: GraphPort;
+  /** The run id recorded by the loader (idempotency key). Defaults to `api-gateway-seed`. */
+  runId?: string;
+}
+
+/**
+ * Build the gateway's read-path backend by loading the canonical `demo/*.jsonl` seed
+ * into an in-memory graph **through the real `GraphLoader`** (UI-D2 / UI-D3) — the
+ * exact pipeline the demo runs, not a hand-rolled fixture. Returns the wired
+ * `QueryService` + `ViewEngine` the resolvers delegate to.
+ *
+ * This is the **one shared seed**: the Yoga dev server, the resolver tests, and the
+ * studio's MSW handlers all call it, so dev/test/mock can never diverge. Swapping the
+ * `graph` option for a `Neo4jGraphAdapter` (D-P1.2) re-seeds the same data over Neo4j
+ * with no other change — the parity the gateway tests prove.
+ */
+export async function seedInMemoryGraph(options: SeedOptions = {}): Promise<SeededBackend> {
+  const graph = options.graph ?? new InMemoryGraphAdapter();
+  const paths = options.jsonlPaths ?? SEED_JSONL_PATHS;
+
+  const loader = new GraphLoader(graph);
+  await loader.initialize({});
+  const loadResult = await loader.load(concatJsonl([...paths]), options.runId ?? "api-gateway-seed");
+
+  const queryService = new GraphQueryService(graph);
+  const views = new DefaultViewEngine(queryService);
+  views.registerProjector(new DomainMapProjector(queryService));
+  views.registerProjector(new BehaviourFlowProjector(queryService));
+  views.registerProjector(new VendorCoverageProjector(queryService));
+  views.registerProjector(new GapAnalysisProjector(queryService));
+
+  return { graph, queryService, views, loadResult };
+}

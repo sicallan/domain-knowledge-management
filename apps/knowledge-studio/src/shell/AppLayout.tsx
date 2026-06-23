@@ -1,4 +1,6 @@
 import { Outlet } from "react-router-dom";
+import { ContextPanel } from "../context-panel/ContextPanel";
+import { SelectionDeepLink } from "../context-panel/SelectionDeepLink";
 import { useShellStore } from "../store";
 import { Breadcrumb } from "./Breadcrumb";
 import { ContextPanelSlot } from "./ContextPanelSlot";
@@ -6,7 +8,6 @@ import { NavMenu } from "./NavMenu";
 import { NotificationCentre } from "./NotificationCentre";
 import { SAMPLE_NOTIFICATIONS } from "./sample-data";
 import { SearchBar } from "./SearchBar";
-import { SelectedEntrySummary } from "./SelectedEntrySummary";
 
 /**
  * The persistent application frame (UI-3.1) every screen mounts in: a nav rail, a header
@@ -24,6 +25,7 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
+      <SelectionDeepLink />
       <a href="#main-content" className="sr-only focus:not-sr-only">
         Skip to main content
       </a>
@@ -50,7 +52,7 @@ export function AppLayout() {
       </div>
 
       <ContextPanelSlot open={panelOpen} onClose={closePanel}>
-        {selectedEntry && <SelectedEntrySummary entry={selectedEntry} />}
+        <ContextPanel entryId={selectedEntry?.id ?? null} />
       </ContextPanelSlot>
     </div>
   );

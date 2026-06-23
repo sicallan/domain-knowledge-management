@@ -1,6 +1,6 @@
-# ADR-0006 — GraphQL server framework (draft — GraphQL Yoga + Pothos recommended)
+# ADR-0006 — GraphQL server framework
 
-- **Status**: Proposed (draft — ratify at UI-3.2 kickoff)
+- **Status**: Accepted (ratified at UI-3.1 kickoff, 2026-06-22; applies at UI-3.2)
 - **Date**: 2026-06-22
 - **Deciders**: Platform architecture (UI/Backend track)
 - **Related**: [ui-backend-plan.md §GraphQL primary, REST secondary](../../ui-backend-plan.md), [ADR-0004](./0004-ui-framework.md) (client), [specs/008 — Query Interface](../../specs/README.md), CLAUDE.md *Architecture commitments* (TypeScript API; port/adapter everywhere), [Phase 1 decisions D-P1.2](../phase-1/decisions.md) (in-memory + Neo4j graph adapters)
@@ -15,7 +15,7 @@ schema-first support, and subscription support**. CLAUDE.md commits the API to T
 **port/adapter** — the GraphQL layer must wrap the existing `QueryInterface` port (D-P1.2), never reach
 a store directly.
 
-## Decision (recommended default)
+## Decision
 
 **GraphQL Yoga** as the server, with **Pothos** as the code-first, type-safe schema builder (which
 also **emits SDL** so the schema stays inspectable/contract-testable — satisfying the "schema-first
@@ -37,10 +37,11 @@ ecosystem); schema-first **graphql-tools** if a hand-authored SDL contract is pr
 
 ## Consequences
 
-- **Now (draft)**: records direction; no server scaffolded. The data source (the Query Interface port)
-  already exists and is adapter-parity-tested.
-- **On ratification**: scaffold `apps/api-gateway` (Yoga + Pothos) resolving over the in-memory
-  adapter; the seeded-graph resolver tests are the UI-3.2 gate.
+- **Ratified (2026-06-22)**: GraphQL Yoga + Pothos. The data source (the Query Interface port) already
+  exists and is adapter-parity-tested, so the server is an adapter over it — never a store
+  reach-through.
+- **Next**: scaffold `apps/api-gateway` (Yoga + Pothos) resolving over the in-memory adapter at UI-3.2;
+  the seeded-graph resolver tests are the gate.
 - **Trigger to reconsider**: federation/gateway needs (multiple subgraphs) or an ecosystem feature
   only Apollo provides — a superseding ADR at that point.
 - **Not decided here**: auth integration mechanism (UI-3.3), persisted queries, and caching strategy —

@@ -18,8 +18,17 @@
       "@dkm/quality": ["modules/quality-verification/src/index.ts"],
       "@dkm/quality/*": ["modules/quality-verification/src/*"],
       "@dkm/source-connectors": ["modules/source-connectors/src/index.ts"],
-      "@dkm/source-connectors/*": ["modules/source-connectors/src/*"]
+      "@dkm/source-connectors/*": ["modules/source-connectors/src/*"],
+      "@dkm/api-gateway": ["apps/api-gateway/src/index.ts"],
+      "@dkm/api-gateway/*": ["apps/api-gateway/src/*"]
     }
   },
-  "include": ["modules/*/src/**/*.ts", "modules/*/test/**/*.ts", "demo/src/**/*.ts", "*.config.ts"]
+  "include": [
+    "modules/*/src/**/*.ts",
+    "modules/*/test/**/*.ts",
+    "apps/api-gateway/src/**/*.ts",
+    "apps/api-gateway/test/**/*.ts",
+    "demo/src/**/*.ts",
+    "*.config.ts"
+  ]
 }

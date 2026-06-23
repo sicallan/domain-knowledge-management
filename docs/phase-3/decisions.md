@@ -201,5 +201,8 @@ doc's recommendation is the working default:
   *explanation/remediation* layer is additive and revisited only if asked
   ([feature 04 §11](../features/phase-3/04-gap-analysis-view.md)).
 - **UI/Backend track tech stack** — UI framework, graph-visualisation library, GraphQL server
-  framework, and component library are **not** chosen here; each is captured as an ADR when the
-  UI/Backend track (UI-3.1…UI-3.6) begins ([ui-backend-plan.md](../../ui-backend-plan.md)).
+  framework, and component library are **not** chosen here; each is captured as an ADR for the
+  UI/Backend track (UI-3.1…UI-3.6, [ui-backend-plan.md](../../ui-backend-plan.md)). **Now ratified**
+  (2026-06-22): [ADR-0004](../adr/0004-ui-framework.md) React, [ADR-0005](../adr/0005-graph-visualisation-library.md)
+  Cytoscape.js, [ADR-0006](../adr/0006-graphql-server-framework.md) GraphQL Yoga + Pothos,
+  [ADR-0007](../adr/0007-component-library.md) shadcn/ui — see the UI track's own decisions doc.

@@ -1,0 +1,334 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`GraphQL SDL contract > matches the committed snapshot 1`] = `
+""""A query type whose backend is not wired yet — honest, never an error."""
+type BackendUnavailable {
+  available: Boolean!
+  queryType: String!
+  reason: String!
+  requiredBackends: [String!]!
+}
+
+type BehaviourFlowDecision {
+  id: ID!
+  name: String!
+  outcomes: [BehaviourFlowOutcome!]!
+  type: String!
+}
+
+type BehaviourFlowEvent {
+  eventId: ID!
+  name: String!
+}
+
+type BehaviourFlowHeader {
+  id: ID!
+  name: String!
+  owningService: String
+  trigger: String!
+}
+
+type BehaviourFlowOutcome {
+  label: String!
+  producesEventId: ID
+}
+
+type BehaviourFlowStep {
+  actionType: String!
+  compensates: String
+  consumes: [BehaviourFlowEvent!]!
+  decision: BehaviourFlowDecision
+  emits: [BehaviourFlowEvent!]!
+  id: ID!
+  isDecisionPoint: Boolean!
+  sequence: Int!
+  serviceOrComponent: String
+  transitions: [BehaviourFlowTransition!]!
+}
+
+type BehaviourFlowTransition {
+  fromState: String!
+  guardCondition: String
+  toState: String!
+}
+
+type BehaviourFlowView {
+  flow: BehaviourFlowHeader!
+  steps: [BehaviourFlowStep!]!
+}
+
+type ContextRelationship {
+  targetContextId: String!
+  type: String!
+}
+
+type CrossContextRelationship {
+  source: String!
+  strength: Int!
+  target: String!
+  type: String!
+}
+
+"""Edge direction to follow in a traversal."""
+enum Direction {
+  BOTH
+  IN
+  OUT
+}
+
+type DomainMapContext {
+  conceptCount: Int!
+  id: ID!
+  name: String!
+  relationships: [ContextRelationship!]!
+  serviceCount: Int!
+}
+
+type DomainMapSubdomain {
+  contexts: [DomainMapContext!]!
+  id: ID!
+  name: String!
+}
+
+type DomainMapView {
+  crossContextRelationships: [CrossContextRelationship!]!
+  subdomains: [DomainMapSubdomain!]!
+}
+
+"""A keyset-paginated page of inventory entries."""
+type EntryConnection {
+  cursor: String
+  hasMore: Boolean!
+  items: [InventoryEntry!]!
+  totalCount: Int
+}
+
+"""A provenance link tying an assertion to its source."""
+type Evidence {
+  fetchedAt: String!
+  location: String
+  source: String!
+  sourceAuthority: String
+}
+
+enum FilterOp {
+  EQ
+  NEQ
+}
+
+type GapAnalysisGap {
+  domain: String
+  id: ID!
+  kind: String!
+  missingLayers: [String!]!
+  name: String!
+  priority: Int!
+  reason: String!
+}
+
+type GapAnalysisSummary {
+  fullyRealised: Int!
+  functionalGaps: Int!
+  technicalGaps: Int!
+  totalAssessed: Int!
+}
+
+type GapAnalysisView {
+  gaps: [GapAnalysisGap!]!
+  summary: GapAnalysisSummary!
+}
+
+union ImpactResult = BackendUnavailable | ImpactSuccess
+
+type ImpactSuccess {
+  available: Boolean!
+  impacted: [ImpactedNode!]!
+}
+
+type ImpactedNode {
+  distance: Int!
+  entry: InventoryEntry!
+  score: Float!
+}
+
+"""
+A typed inventory entry — the base-entry fields plus a JSON escape hatch for type-specific data.
+"""
+type InventoryEntry {
+  confidence: Float
+  createdAt: String
+  createdBy: String
+
+  """
+  The full entry record incl. type-specific fields (the open InventoryEntry index signature).
+  """
+  data: JSON!
+  evidencedBy: [Evidence!]!
+  id: ID!
+  lifecycleStatus: String!
+  transactionTime: String
+  type: String!
+  updatedAt: String
+  validFrom: String!
+  validTo: String
+  version: String!
+}
+
+"""
+Arbitrary JSON — an inventory entry's full record incl. type-specific fields.
+"""
+scalar JSON
+
+type PathResult {
+  found: Boolean!
+  paths: [QueryPath!]!
+}
+
+"""An equality/inequality predicate over an inventory entry property."""
+input PropertyFilterInput {
+  field: String!
+  op: FilterOp!
+  value: JSON!
+}
+
+type Query {
+  """
+  Impact assessment — Phase 3 returns BackendUnavailable (deferred to Phase 4).
+  """
+  assessImpact(traversalDepth: Int!, triggerNodeId: ID!): ImpactResult!
+
+  """
+  A single orchestration flow projected as ordered steps with decision points.
+  """
+  behaviourFlow(flowId: ID!): BehaviourFlowView!
+
+  """
+  The L2 Vendor Coverage Map: L1 rows × vendor columns, with roll-up status.
+  """
+  coverageMap(domain: String, rowKind: String, vendor: String): VendorCoverageView!
+
+  """The L1 Domain Map: subdomains → bounded contexts → concepts/services."""
+  domainMap(depth: Int, subdomain: String): DomainMapView!
+
+  """
+  List inventory entries of a type, with filters, sort and keyset pagination.
+  """
+  entries(cursor: String, filter: [PropertyFilterInput!], limit: Int, sort: SortInput, type: String): EntryConnection!
+
+  """Look up one inventory entry by id; null (not an error) when absent."""
+  entry(id: ID!): InventoryEntry
+
+  """
+  The deterministic inverse of the Coverage Map — L1 elements with absent realisation layers.
+  """
+  gapAnalysis(domain: String, layer: String): GapAnalysisView!
+
+  """Find paths between two nodes."""
+  paths(edgeTypes: [String!], limit: Int, maxDepth: Int, sourceId: ID!, targetId: ID!): PathResult!
+
+  """
+  Semantic/keyword/hybrid search — Phase 3 returns BackendUnavailable (Tier 2).
+  """
+  search(mode: SearchMode!, query: String!): SearchResult!
+
+  """
+  Traverse the graph from a start node; depth is clamped by the service cap.
+  """
+  traverse(direction: Direction!, edgeTypes: [String!], includeEdges: Boolean!, maxDepth: Int!, nodeTypes: [String!], startNodeId: ID!): Subgraph!
+}
+
+"""A single connecting path between two nodes."""
+type QueryPath {
+  edges: [Relationship!]!
+  nodeIds: [ID!]!
+}
+
+"""A typed, directed edge between two inventory entries."""
+type Relationship {
+  confidence: Float
+  direction: String
+  id: ID!
+  relationshipType: String!
+  sourceId: ID!
+  sourceType: String
+  targetId: ID!
+  targetType: String
+}
+
+type SearchHit {
+  entry: InventoryEntry!
+  score: Float!
+}
+
+type SearchHits {
+  available: Boolean!
+  cursor: String
+  hasMore: Boolean!
+  hits: [SearchHit!]!
+  totalCount: Int
+}
+
+enum SearchMode {
+  HYBRID
+  KEYWORD
+  SEMANTIC
+}
+
+union SearchResult = BackendUnavailable | SearchHits
+
+enum SortDirection {
+  ASC
+  DESC
+}
+
+input SortInput {
+  direction: SortDirection!
+  field: String!
+}
+
+"""The reachable subgraph from a traversal."""
+type Subgraph {
+  edges: [Relationship!]!
+  nodes: [InventoryEntry!]!
+  truncated: Boolean!
+}
+
+type VendorCoverageCell {
+  columnId: ID!
+  coveragePercentage: Float
+  gaps: [String!]
+  mappingId: ID
+  rowId: ID!
+  status: String!
+}
+
+type VendorCoverageColumn {
+  id: ID!
+  name: String!
+  vendor: String!
+}
+
+type VendorCoverageRow {
+  domain: String
+  gap: Boolean!
+  id: ID!
+  kind: String!
+  name: String!
+  status: String!
+}
+
+type VendorCoverageSummary {
+  coveragePercentage: Float!
+  covered: Int!
+  partial: Int!
+  totalCapabilities: Int!
+  uncovered: Int!
+}
+
+type VendorCoverageView {
+  cells: [VendorCoverageCell!]!
+  columns: [VendorCoverageColumn!]!
+  rows: [VendorCoverageRow!]!
+  summary: VendorCoverageSummary!
+}"
+`;

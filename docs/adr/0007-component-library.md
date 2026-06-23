@@ -1,6 +1,6 @@
-# ADR-0007 — Component library / design system (draft — shadcn/ui + Radix + Tailwind recommended)
+# ADR-0007 — Component library / design system
 
-- **Status**: Proposed (draft — ratify at UI-3.1 kickoff)
+- **Status**: Accepted (ratified at UI-3.1 kickoff, 2026-06-22)
 - **Date**: 2026-06-22
 - **Deciders**: Platform architecture (UI/Backend track)
 - **Related**: [ui-backend-plan.md §Tech Stack Decision Strategy](../../ui-backend-plan.md), [ADR-0004](./0004-ui-framework.md) (UI framework — constrains this), [ADR-0005](./0005-graph-visualisation-library.md) (the canvas sits inside this shell)
@@ -12,7 +12,7 @@ review queue — needs a component library / design system. [ui-backend-plan.md]
 sets the criteria: **accessibility, customisation, and bundle size**. The choice is constrained by the
 UI framework (ADR-0004, React recommended) and must coexist with the graph canvas (ADR-0005).
 
-## Decision (recommended default)
+## Decision
 
 **shadcn/ui** (Radix UI primitives + Tailwind CSS) — copy-in components, not a runtime dependency.
 Alternatives for the kickoff: **MUI** (batteries-included, faster start, heavier bundle), **Mantine**,
@@ -32,9 +32,8 @@ Alternatives for the kickoff: **MUI** (batteries-included, faster start, heavier
 
 ## Consequences
 
-- **Now (draft)**: records direction; nothing installed. Tightly coupled to ADR-0004 — if the UI
-  framework changes at kickoff, this default changes with it.
-- **On ratification**: initialise Tailwind + shadcn in `apps/knowledge-studio`; capture the design
+- **Ratified (2026-06-22)**: shadcn/ui (Radix + Tailwind), consistent with ADR-0004's React host.
+- **Next**: initialise Tailwind + shadcn in `apps/knowledge-studio` at UI-3.1; capture the design
   tokens (spacing, colour incl. the coverage RAG palette shared with the Markdown matrices) as the
   shell's foundation.
 - **Trigger to reconsider**: a need for a large pre-built data-grid/charting suite that MUI/Mantine

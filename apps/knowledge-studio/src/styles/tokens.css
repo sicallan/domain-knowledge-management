@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Design tokens (UI-3.1). Base shadcn-style surface/typography variables plus the
+ * **coverage RAG palette** (--coverage-covered / --coverage-partial / --coverage-uncovered)
+ * shared with the data-track Markdown matrices, so the graph/list views and the Markdown
+ * exports speak one colour language. Values are HSL channels (`H S% L%`) so Tailwind's
+ * `<alpha-value>` opacity modifier works.
+ */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --border: 214 32% 91%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --primary: 221 83% 53%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Coverage RAG palette — Red/Amber/Green. */
+  --coverage-covered: 142 71% 45%; /* green  — fully realised */
+  --coverage-partial: 38 92% 50%; /* amber  — partially realised */
+  --coverage-uncovered: 0 84% 60%; /* red    — gap */
+}
+
+.dark {
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  --border: 217 33% 24%;
+  --muted: 217 33% 18%;
+  --muted-foreground: 215 20% 65%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 222 47% 11%;
+
+  --coverage-covered: 142 69% 58%;
+  --coverage-partial: 38 92% 60%;
+  --coverage-uncovered: 0 72% 65%;
+}
+
+body {
+  @apply bg-background text-foreground;
+}

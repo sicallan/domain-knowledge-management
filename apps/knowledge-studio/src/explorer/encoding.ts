@@ -33,6 +33,15 @@ export function layerOfType(type: string): string {
   return TYPE_LAYER[type] ?? "L1";
 }
 
+/**
+ * The inventory types the explorer can browse — the keys of the shared type→layer map, so the
+ * canvas and the list/table (UI-3.5) derive their type universe from one source. OCP-open:
+ * registering a new type's layer here makes it browsable in both modes (additive).
+ */
+export function knownInventoryTypes(): string[] {
+  return Object.keys(TYPE_LAYER);
+}
+
 /** Layer-banded node colours (distinct hues per layer; HSL strings). */
 const LAYER_COLOUR: Record<string, string> = {
   L0: "hsl(280 60% 55%)", // strategic — violet

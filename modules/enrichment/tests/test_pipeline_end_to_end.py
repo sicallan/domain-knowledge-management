@@ -107,3 +107,61 @@ async def test_entity_resolution_dedups_across_documents(tmp_path: Path) -> None
     # The surviving entity carries evidence from both source documents.
     assert len(authorisations[0]["data"]["evidencedBy"]) == 2
     assert result.stats.entitiesResolved == 1
+
+
+async def test_structured_array_source_extracts_per_record(tmp_path: Path) -> None:
+    """Issue #30 end-to-end: a top-level JSON array (decision-log shape) flows through the
+    pipeline as one chunk per record, so extraction + provenance are per-record."""
+
+    records = [
+        {"id": "DEC-001", "title": "Authorise synchronously"},
+        {"id": "DEC-002", "title": "Tokenise credentials"},
+    ]
+    document = CanonicalDocument(
+        id="doc-decisions",
+        sourceType="filesystem",
+        sourcePath="decision-log.json",
+        sourceVersion="1",
+        fetchedAt="2026-01-01T00:00:00.000Z",
+        sourceAuthority="scheme",
+        content=json.dumps(records),
+        contentType="structured",
+        structuredContent=records,
+        title="Decision Log",
+    )
+    # Scripts are keyed by the chunk's section title — for an array record that is its id.
+    script: dict[str, dict[str, dict[str, Any]]] = {
+        "doc-decisions": {
+            "DEC-001": {
+                "entities": [
+                    {
+                        "type": "DomainConcept",
+                        "name": "Synchronous Authorisation",
+                        "conceptType": "policy",
+                        "confidence": 0.9,
+                    }
+                ]
+            },
+            "DEC-002": {
+                "entities": [
+                    {
+                        "type": "DomainConcept",
+                        "name": "Credential Tokenisation",
+                        "conceptType": "policy",
+                        "confidence": 0.9,
+                    }
+                ]
+            },
+        }
+    }
+    gateway = FakeGateway(router=scripted_router(script))
+    pipeline = ExtractionPipeline(gateway)
+    result = await pipeline.run([document], ExtractionConfig(), tmp_path)
+
+    entities = read_jsonl(Path(result.outputFiles.extractions))
+    # One entity per record, each evidenced at its own record's location (per-record provenance).
+    by_location = {e["data"]["name"]: e["data"]["evidencedBy"][0]["location"] for e in entities}
+    assert by_location == {
+        "Synchronous Authorisation": "Record: DEC-001",
+        "Credential Tokenisation": "Record: DEC-002",
+    }

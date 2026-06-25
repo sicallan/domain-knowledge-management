@@ -117,7 +117,11 @@ class CanonicalDocument(BaseModel):
     sourceAuthority: SourceAuthority
     content: str
     contentType: ContentType = "markdown"
-    structuredContent: dict[str, Any] | None = None
+    # A structured source canonicalises to either a top-level JSON **object** (a single record,
+    # e.g. payment-inventory.json) or a top-level **array** of records (e.g. decision-log.json).
+    # Admitting ``list`` is the fix for issue #30 finding 1; structured-aware chunking (chunking.py)
+    # turns each into chunks.
+    structuredContent: dict[str, Any] | list[Any] | None = None
     title: str | None = None
     author: str | None = None
     lastModified: str | None = None

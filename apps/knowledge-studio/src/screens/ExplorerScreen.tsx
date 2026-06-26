@@ -1,6 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CoverageLegend } from "../components/CoverageLegend";
 import { type LayoutMode } from "../explorer/encoding";
+import { ExplorerList } from "../explorer/ExplorerList";
+import { Facets } from "../explorer/Facets";
+import { type FacetState, type SortState } from "../explorer/facets";
 import { GraphCanvas } from "../explorer/GraphCanvas";
 import { applyFilters, type GraphFilters, toCytoscapeElements } from "../explorer/graph-adapter";
 import { useExplorerGraph } from "../explorer/useExplorerGraph";
@@ -9,7 +12,6 @@ import { useShellStore } from "../store";
 
 type ExplorerMode = "canvas" | "list";
 
-const LAYERS = ["L1", "L2", "L3"] as const;
 const LAYOUTS: { value: LayoutMode; label: string }[] = [
   { value: "force", label: "Force" },
   { value: "hierarchical", label: "Hierarchical" },
@@ -17,31 +19,46 @@ const LAYOUTS: { value: LayoutMode; label: string }[] = [
 ];
 
 /**
- * The Knowledge Explorer host (UI-3.1 shell + UI-3.4 canvas). The canvas reads the gateway's
- * `traverse` via {@link useExplorerGraph} (UI-D3), renders through the `toCytoscapeElements`
- * adapter, and drives layer filters, layout modes, lazy expand and selection → context panel.
- * List/table is UI-3.5 (the accessible equivalent), still a placeholder here.
+ * The Knowledge Explorer host (UI-3.1 shell + UI-3.4 canvas + UI-3.5 list/table). It owns the
+ * **shared** filter (`facets`) and selection state both modes read, and toggles between the
+ * Cytoscape canvas and the accessible {@link ExplorerList}. The canvas reads `traverse` via
+ * {@link useExplorerGraph}; the list reads `entries` via `useEntries` — both over the gateway
+ * (UI-D3). Selection flows through the store's `selectEntry`, so a row and a node select the
+ * same entry (criterion 8). The shell's search resolves into the list (criterion 7).
  */
 export function ExplorerScreen() {
   const [mode, setMode] = useState<ExplorerMode>("canvas");
   const [layout, setLayout] = useState<LayoutMode>("force");
-  const [activeLayers, setActiveLayers] = useState<string[]>([]);
+  const [facets, setFacets] = useState<FacetState>({});
+  const [sort, setSort] = useState<SortState | null>(null);
+  const [groupBy, setGroupBy] = useState<"type" | "layer" | null>(null);
 
   const { subgraph, loading, error, expand } = useExplorerGraph();
   const selectEntry = useShellStore((state) => state.selectEntry);
   const selectedEntry = useShellStore((state) => state.selectedEntry);
+  const lastSearch = useShellStore((state) => state.lastSearch);
 
-  const filters: GraphFilters = useMemo(() => ({ layers: activeLayers }), [activeLayers]);
+  // The shell's structured search resolves into a filtered listing here (criterion 7).
+  useEffect(() => {
+    if (lastSearch) setMode("list");
+  }, [lastSearch]);
+
+  const filters: GraphFilters = useMemo(
+    () => ({ layers: facets.layers, types: facets.types }),
+    [facets.layers, facets.types],
+  );
   const visible = useMemo(() => applyFilters(subgraph, filters), [subgraph, filters]);
   const elements = useMemo(() => toCytoscapeElements(visible), [visible]);
 
-  function toggleLayer(layer: string): void {
-    setActiveLayers((previous) =>
-      previous.includes(layer) ? previous.filter((value) => value !== layer) : [...previous, layer],
+  function toggleSort(field: string): void {
+    setSort((previous) =>
+      previous?.field === field
+        ? { field, direction: previous.direction === "asc" ? "desc" : "asc" }
+        : { field, direction: "asc" },
     );
   }
 
-  function handleSelect(id: string): void {
+  function handleCanvasSelect(id: string): void {
     const node = subgraph.nodes.find((candidate) => candidate.id === id);
     selectEntry({ id, type: node?.type, label: node?.label });
   }
@@ -70,6 +87,9 @@ export function ExplorerScreen() {
         </div>
       </div>
 
+      {/* Shared faceted filters — the same model both modes read (criterion 8). */}
+      <Facets facets={facets} onChange={setFacets} />
+
       {mode === "canvas" ? (
         <>
           <div className="flex flex-wrap items-center gap-4">
@@ -87,21 +107,6 @@ export function ExplorerScreen() {
                 ))}
               </select>
             </label>
-
-            <fieldset className="flex items-center gap-3 text-sm">
-              <legend className="sr-only">Filter by layer</legend>
-              <span aria-hidden="true">Layers</span>
-              {LAYERS.map((layer) => (
-                <label key={layer} className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={activeLayers.includes(layer)}
-                    onChange={() => toggleLayer(layer)}
-                  />
-                  {layer}
-                </label>
-              ))}
-            </fieldset>
 
             <CoverageLegend />
           </div>
@@ -139,14 +144,21 @@ export function ExplorerScreen() {
               elements={elements}
               layout={layout}
               selectedId={selectedEntry?.id ?? null}
-              onSelect={handleSelect}
+              onSelect={handleCanvasSelect}
             />
           )}
         </>
       ) : (
-        <div className="rounded-md border border-dashed border-border p-8 text-center text-muted-foreground">
-          List / table mounts here (UI-3.5).
-        </div>
+        <ExplorerList
+          facets={facets}
+          sort={sort}
+          onSort={toggleSort}
+          groupBy={groupBy}
+          onGroupBy={setGroupBy}
+          query={lastSearch ?? undefined}
+          onSelectEntry={selectEntry}
+          selectedId={selectedEntry?.id ?? null}
+        />
       )}
     </section>
   );

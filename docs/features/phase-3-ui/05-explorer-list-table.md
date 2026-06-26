@@ -119,14 +119,34 @@ New files (indicative): `apps/knowledge-studio/src/explorer/{EntryTable,facets,u
 
 ## 9. Task breakdown
 
-1. [ ] `useEntries` hook over the gateway `entries` query (cursor pagination).
-2. [ ] `EntryTable`: columns, rows, `totalCount`, row select (emit `selectEntry`), selected state.
-3. [ ] Faceted filters mapped to `entries` args (server-side where expressible) + client-side rest.
-4. [ ] Sort (port `sort`) + client-side group.
-5. [ ] `ExplorerView` hosting the canvas↔table toggle with shared selection/filter state.
-6. [ ] Resolve the shell's `onSearch` into a filtered listing.
-7. [ ] Accessibility (ARIA grid, keyboard nav) + tests first (rows, pagination, facets, sort/group,
+1. [x] `useEntries` hook over the gateway `entries` query (cursor pagination).
+2. [x] `EntryTable`: columns, rows, `totalCount`, row select (emit `selectEntry`), selected state.
+3. [x] Faceted filters mapped to `entries` args (server-side where expressible) + client-side rest.
+4. [x] Sort (port `sort`) + client-side group.
+5. [x] `ExplorerView` hosting the canvas↔table toggle with shared selection/filter state.
+6. [x] Resolve the shell's `onSearch` into a filtered listing.
+7. [x] Accessibility (ARIA grid, keyboard nav) + tests first (rows, pagination, facets, sort/group,
    search, toggle, a11y, MSW).
+
+### Implementation notes (as built)
+
+- **The port lists one type at a time** (`listEntries` returns `[]` without a `type`). So
+  `useEntries` fetches **a page per active type and merges client-side**; `loadMore` advances
+  every type's cursor independently. Default type universe when no `type` facet is active =
+  `knownInventoryTypes()` (the shared canvas encoding map — OCP-open: registering a type's
+  layer makes it browsable in both modes).
+- **Server-side vs client-side split** lives in the pure `facets.ts`: `type`, `sort`, and a
+  *single-valued* `lifecycle`/`owner` facet → `entries` args (`toEntriesArgs`); layer (derived
+  from type), confidence band, date range, multi-valued lifecycle and free-text search →
+  page-scoped client narrowing (`applyClientFacets`). Merged multi-type rows are re-sorted with
+  the same comparator the port uses (`compareRows`). Owner maps to `createdBy` (the seed has no
+  dedicated owner field).
+- **The host is `ExplorerScreen.tsx`** (the existing UI-3.4 host), not a new `ExplorerView.tsx`
+  — the filenames in §7 were indicative. It owns the shared `FacetState`/selection both modes
+  read; the list lives in `explorer/ExplorerList.tsx`.
+- **Type-aware extra columns** (`deriveColumns`) appear only when exactly one type is in view,
+  derived from the loaded rows' non-base `data` keys (capped, deterministic) — additive per the
+  open question.
 
 ## 10. OCP extension points
 

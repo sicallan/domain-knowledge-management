@@ -1,0 +1,36 @@
+# DKM QUICKSTART stack.
+#
+#   docker compose up
+#     → gateway (http://localhost:4000/graphql) + studio (http://localhost:5173)
+#       seeded with the bundled Payments demo. Zero secrets, ~2 minutes. (Tier A)
+#
+# To explore YOUR domain instead: process your documents into ./data/<domain>/*.jsonl
+# (see QUICKSTART.md, Tier B), then set DKM_DATA_DIR for the gateway and restart.
+# The gateway serves ./data/*.jsonl when present, else the demo — so an empty ./data is fine.
+
+services:
+  gateway:
+    build: .
+    image: dkm-app
+    command: pnpm exec tsx apps/api-gateway/src/server.ts
+    environment:
+      PORT: "4000"
+      # Serve every *.jsonl in this dir when present; otherwise fall back to the demo.
+      DKM_DATA_DIR: /app/data
+    volumes:
+      # Your processed domain data (and the JSONL you analyse with your own LLM) lives here.
+      - ./data:/app/data
+    ports:
+      - "4000:4000"
+
+  studio:
+    build: .
+    image: dkm-app
+    command: pnpm --filter @dkm/knowledge-studio exec vite --host 0.0.0.0 --port 5173
+    environment:
+      # The Vite dev server proxies /graphql to the gateway service (same-origin in the browser).
+      VITE_GRAPHQL_PROXY: http://gateway:4000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - gateway

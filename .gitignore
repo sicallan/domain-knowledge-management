@@ -24,6 +24,10 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
+# Quickstart runtime data — processed domain JSONL lives here (keep the README, ignore the data).
+/data/*
+!/data/README.md
+
 # Editor / OS
 .DS_Store
 *.log

@@ -61,15 +61,27 @@ The gateway seeds from JSONL. With no data of your own it serves the bundled
 
 ## Tier B — your domain, your documents
 
-Drop a folder of documents (Markdown, plaintext, JSON), name your domain, and let the system
-build the graph:
+Point it at a folder of documents (Markdown, plaintext, JSON), name your domain, and let the
+system build the graph:
 
 ```bash
 cp .env.example .env                 # set ANTHROPIC_API_KEY
-./scripts/dkm process ./my-docs --domain lending
+./scripts/dkm process <path-to-your-docs> --domain lending
 DKM_DOMAIN=lending docker compose up   # the UI now serves YOUR graph
 # → http://localhost:5173
 ```
+
+**Where do the docs go?** Nowhere special — you pass the **path** to wherever they already are.
+The folder is mounted read-only into the processor; it is never copied into the repo. The path
+can be absolute or relative, and the folder is scanned recursively for `.md` / `.txt` / `.json`:
+
+```bash
+./scripts/dkm process /home/you/work/lending-docs --domain lending   # absolute
+./scripts/dkm process ../shared/policies --domain lending            # relative
+```
+
+Run `./scripts/dkm` from the repo root (so Docker Compose finds its config and the `./data`
+volume). The only thing written into the repo is the output — `data/<domain>/`.
 
 `dkm process` runs the full pipeline over your documents, in Docker (no local Node/Python needed):
 
@@ -86,7 +98,7 @@ It writes the typed **intermediate JSONL** to `data/<domain>/` — `extractions.
 (produces an empty graph, but proves connectors → extraction → serve end to end):
 
 ```bash
-./scripts/dkm process ./my-docs --domain lending --fake
+./scripts/dkm process <path-to-your-docs> --domain lending --fake
 ```
 
 Options: `--domain <name>` (required), `--fake` (no LLM), `--authority <regulatory|scheme|vendor|project|operational>`

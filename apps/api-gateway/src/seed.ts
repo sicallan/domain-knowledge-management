@@ -1,4 +1,5 @@
-import { dirname, join } from "node:path";
+import { readdirSync } from "node:fs";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { InMemoryGraphAdapter } from "@dkm/knowledge-graph";
 import type { GraphPort } from "@dkm/knowledge-graph";
@@ -25,6 +26,49 @@ export const SEED_JSONL_PATHS = [
   join(DEMO_DIR, "payments-extractions.jsonl"),
   join(DEMO_DIR, "payments-relationships.jsonl"),
 ] as const;
+
+/** The environment knobs that point the gateway at a domain's data instead of the demo seed. */
+export interface SeedEnv {
+  /** Explicit, comma-separated JSONL paths (highest precedence). */
+  DKM_JSONL?: string;
+  /** A directory whose ``*.jsonl`` files are served (e.g. a `dkm process` output dir). */
+  DKM_DATA_DIR?: string;
+}
+
+/**
+ * Resolve which JSONL files the gateway should seed from (QUICKSTART / docker-compose). Order:
+ * explicit ``DKM_JSONL`` → every ``*.jsonl`` in ``DKM_DATA_DIR`` → the bundled Payments demo.
+ *
+ * A ``DKM_DATA_DIR`` that exists but holds no JSONL (e.g. a freshly-mounted, not-yet-processed
+ * volume) **falls back to the demo** so ``docker compose up`` always shows *something* — the
+ * "see it in two minutes" path. Returns absolute paths.
+ */
+export function resolveSeedJsonlPaths(env: SeedEnv = process.env): readonly string[] {
+  const toAbsolute = (path: string): string => (isAbsolute(path) ? path : resolve(path));
+
+  if (env.DKM_JSONL && env.DKM_JSONL.trim()) {
+    return env.DKM_JSONL.split(",")
+      .map((path) => path.trim())
+      .filter((path) => path.length > 0)
+      .map(toAbsolute);
+  }
+
+  if (env.DKM_DATA_DIR && env.DKM_DATA_DIR.trim()) {
+    const dir = toAbsolute(env.DKM_DATA_DIR.trim());
+    let jsonl: string[] = [];
+    try {
+      jsonl = readdirSync(dir)
+        .filter((name) => name.endsWith(".jsonl"))
+        .sort()
+        .map((name) => join(dir, name));
+    } catch {
+      jsonl = []; // missing/unreadable dir → fall back to the demo
+    }
+    if (jsonl.length > 0) return jsonl;
+  }
+
+  return SEED_JSONL_PATHS;
+}
 
 /** The injectable read-path backend the gateway resolvers delegate to (UI-D3). */
 export interface SeededBackend {

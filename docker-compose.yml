@@ -4,9 +4,11 @@
 #     → gateway (http://localhost:4000/graphql) + studio (http://localhost:5173)
 #       seeded with the bundled Payments demo. Zero secrets, ~2 minutes. (Tier A)
 #
-# To explore YOUR domain instead: process your documents into ./data/<domain>/*.jsonl
-# (see QUICKSTART.md, Tier B), then set DKM_DATA_DIR for the gateway and restart.
-# The gateway serves ./data/*.jsonl when present, else the demo — so an empty ./data is fine.
+# Process YOUR documents (Tier B):
+#   ./scripts/dkm process ./my-docs --domain lending     # → data/lending/*.jsonl
+#   DKM_DOMAIN=lending docker compose up                 # the UI now serves your graph
+# The gateway falls back to the demo whenever the selected source has no JSONL, so an empty
+# ./data is always fine.
 
 services:
   gateway:
@@ -15,8 +17,9 @@ services:
     command: pnpm exec tsx apps/api-gateway/src/server.ts
     environment:
       PORT: "4000"
-      # Serve every *.jsonl in this dir when present; otherwise fall back to the demo.
+      # Serve data/<DKM_DOMAIN>/*.jsonl when a domain is selected, else data/*.jsonl, else demo.
       DKM_DATA_DIR: /app/data
+      DKM_DOMAIN: ${DKM_DOMAIN:-}
     volumes:
       # Your processed domain data (and the JSONL you analyse with your own LLM) lives here.
       - ./data:/app/data
@@ -34,3 +37,19 @@ services:
       - "5173:5173"
     depends_on:
       - gateway
+
+  # The Tier-B document processor (Node connectors + Python LLM extraction). Not started by
+  # `docker compose up` (it's in the `process` profile) — run it via `./scripts/dkm process`,
+  # which mounts your docs at /input and appends `/input --domain <name> [--fake]`.
+  processor:
+    build:
+      context: .
+      dockerfile: Dockerfile.processor
+    image: dkm-processor
+    profiles: ["process"]
+    environment:
+      DKM_DATA_DIR: /app/data
+      # Passed through for real (non-fake) extraction.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./data:/app/data

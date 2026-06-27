@@ -1,0 +1,5 @@
+{
+  "boundedContext": "Authorisation",
+  "aggregates": ["PaymentAuthorisation", "RiskAssessment"],
+  "owner": "payments-platform"
+}

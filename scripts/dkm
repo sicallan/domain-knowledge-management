@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# dkm — the DKM quickstart CLI (Tier B).
+#
+#   ./scripts/dkm process <docs-dir> --domain <name> [--fake]
+#
+# Runs the document processor in Docker: your docs folder is mounted read-only at /input and
+# extracted into ./data/<name>/*.jsonl. Then `DKM_DOMAIN=<name> docker compose up` serves it.
+set -euo pipefail
+
+usage() {
+  echo "usage: ./scripts/dkm process <docs-dir> --domain <name> [--fake] [--authority <a>]" >&2
+  exit 1
+}
+
+cmd="${1:-}"
+[ -n "$cmd" ] && shift || usage
+
+case "$cmd" in
+  process)
+    docs="${1:-}"
+    { [ -n "$docs" ] && [ -d "$docs" ]; } || { echo "✗ docs dir not found: '${docs}'" >&2; usage; }
+    shift
+    docs_abs="$(cd "$docs" && pwd)"
+    # Mount the user's docs read-only at /input; the processor writes to ./data (compose volume).
+    # Run as the host user so the produced JSONL is owned by you, not root (HOME=/tmp keeps any
+    # tool caches writable for a non-root, home-less UID).
+    exec docker compose --profile process run --rm \
+      --user "$(id -u):$(id -g)" \
+      -e HOME=/tmp \
+      -v "${docs_abs}:/input:ro" \
+      processor /input "$@"
+    ;;
+  *)
+    usage
+    ;;
+esac

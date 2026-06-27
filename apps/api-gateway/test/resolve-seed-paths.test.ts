@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -43,5 +43,30 @@ describe("resolveSeedJsonlPaths()", () => {
   it("DKM_JSONL takes precedence over DKM_DATA_DIR", () => {
     const paths = resolveSeedJsonlPaths({ DKM_JSONL: "x.jsonl", DKM_DATA_DIR: "/whatever" });
     expect(paths).toEqual([resolve("x.jsonl")]);
+  });
+
+  it("serves a processed domain at <DKM_DATA_DIR>/<DKM_DOMAIN>/*.jsonl", () => {
+    const root = mkdtempSync(join(tmpdir(), "dkm-root-"));
+    const lending = join(root, "lending");
+    mkdirSync(lending);
+    writeFileSync(join(lending, "extractions.jsonl"), "");
+    writeFileSync(join(lending, "relationships.jsonl"), "");
+
+    expect(resolveSeedJsonlPaths({ DKM_DATA_DIR: root, DKM_DOMAIN: "lending" })).toEqual([
+      join(lending, "extractions.jsonl"),
+      join(lending, "relationships.jsonl"),
+    ]);
+  });
+
+  it("falls back from an unprocessed DKM_DOMAIN to the data root, then the demo", () => {
+    const root = mkdtempSync(join(tmpdir(), "dkm-root2-"));
+    // DKM_DOMAIN points at a not-yet-processed (absent) subdir → no domain JSONL…
+    writeFileSync(join(root, "extractions.jsonl"), ""); // …but the data root has some.
+    expect(resolveSeedJsonlPaths({ DKM_DATA_DIR: root, DKM_DOMAIN: "absent" })).toEqual([
+      join(root, "extractions.jsonl"),
+    ]);
+    // And with neither domain nor root populated, the demo.
+    const empty = mkdtempSync(join(tmpdir(), "dkm-root3-"));
+    expect(resolveSeedJsonlPaths({ DKM_DATA_DIR: empty, DKM_DOMAIN: "absent" })).toEqual(SEED_JSONL_PATHS);
   });
 });

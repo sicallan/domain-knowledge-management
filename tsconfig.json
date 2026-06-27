@@ -28,6 +28,8 @@
     "modules/*/test/**/*.ts",
     "apps/api-gateway/src/**/*.ts",
     "apps/api-gateway/test/**/*.ts",
+    "apps/processor/src/**/*.ts",
+    "apps/processor/test/**/*.ts",
     "demo/src/**/*.ts",
     "*.config.ts"
   ]

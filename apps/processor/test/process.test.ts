@@ -11,7 +11,7 @@ const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "docs
 
 describe("runConnectors", () => {
   it("ingests Markdown and JSON from one folder through the connector registry", async () => {
-    const documents = await runConnectors(DOCS_DIR, "operational");
+    const { documents } = await runConnectors(DOCS_DIR, "operational");
 
     const byType = documents.map((d) => d.contentType);
     expect(byType).toContain("markdown"); // authorisation.md
@@ -26,7 +26,7 @@ describe("runConnectors", () => {
 
 describe("serialiseCanonicalDocs", () => {
   it("emits one JSON document per line, round-trippable", async () => {
-    const documents = await runConnectors(DOCS_DIR, "operational");
+    const { documents } = await runConnectors(DOCS_DIR, "operational");
     const jsonl = serialiseCanonicalDocs(documents);
     const lines = jsonl.trimEnd().split("\n");
     expect(lines).toHaveLength(documents.length);

@@ -114,9 +114,16 @@ export async function runProcess(
   args: ProcessArgs,
   deps: ProcessDeps = { extract: defaultExtract },
 ): Promise<ProcessResult> {
-  const documents = await runConnectors(args.docsDir, args.authority);
+  const { documents, errors } = await runConnectors(args.docsDir, args.authority);
+
+  // Skipped files (e.g. scanned/image-only PDFs with no text layer) are surfaced, not swallowed.
+  for (const error of errors) {
+    console.warn(`  ⚠ skipped ${error.documentPath}: ${error.error}`);
+  }
+
   if (documents.length === 0) {
-    throw new Error(`no supported documents (.md / .txt / .json) under ${args.docsDir}`);
+    const skipped = errors.length > 0 ? ` (${errors.length} file(s) skipped — see warnings above)` : "";
+    throw new Error(`no supported documents (.md / .txt / .json / .pdf) under ${args.docsDir}${skipped}`);
   }
 
   const outDir = join(args.dataDir, args.domain);

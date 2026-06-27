@@ -31,15 +31,30 @@ export const SEED_JSONL_PATHS = [
 export interface SeedEnv {
   /** Explicit, comma-separated JSONL paths (highest precedence). */
   DKM_JSONL?: string;
-  /** A directory whose ``*.jsonl`` files are served (e.g. a `dkm process` output dir). */
+  /** A processed domain name — serves ``<DKM_DATA_DIR or ./data>/<DKM_DOMAIN>/*.jsonl``. */
+  DKM_DOMAIN?: string;
+  /** A directory whose ``*.jsonl`` files are served (e.g. a `dkm process` output dir / data root). */
   DKM_DATA_DIR?: string;
+}
+
+/** All ``*.jsonl`` directly in ``dir`` (non-recursive), sorted, absolute; ``[]`` if unreadable. */
+function jsonlInDir(dir: string): string[] {
+  try {
+    return readdirSync(dir)
+      .filter((name) => name.endsWith(".jsonl"))
+      .sort()
+      .map((name) => join(dir, name));
+  } catch {
+    return []; // missing/unreadable dir
+  }
 }
 
 /**
  * Resolve which JSONL files the gateway should seed from (QUICKSTART / docker-compose). Order:
- * explicit ``DKM_JSONL`` → every ``*.jsonl`` in ``DKM_DATA_DIR`` → the bundled Payments demo.
+ * explicit ``DKM_JSONL`` → the processed domain ``<DKM_DATA_DIR>/<DKM_DOMAIN>/*.jsonl`` →
+ * every ``*.jsonl`` in ``DKM_DATA_DIR`` → the bundled Payments demo.
  *
- * A ``DKM_DATA_DIR`` that exists but holds no JSONL (e.g. a freshly-mounted, not-yet-processed
+ * A selected source that exists but holds no JSONL (e.g. a freshly-mounted, not-yet-processed
  * volume) **falls back to the demo** so ``docker compose up`` always shows *something* — the
  * "see it in two minutes" path. Returns absolute paths.
  */
@@ -53,17 +68,17 @@ export function resolveSeedJsonlPaths(env: SeedEnv = process.env): readonly stri
       .map(toAbsolute);
   }
 
-  if (env.DKM_DATA_DIR && env.DKM_DATA_DIR.trim()) {
-    const dir = toAbsolute(env.DKM_DATA_DIR.trim());
-    let jsonl: string[] = [];
-    try {
-      jsonl = readdirSync(dir)
-        .filter((name) => name.endsWith(".jsonl"))
-        .sort()
-        .map((name) => join(dir, name));
-    } catch {
-      jsonl = []; // missing/unreadable dir → fall back to the demo
-    }
+  const dataRoot = env.DKM_DATA_DIR && env.DKM_DATA_DIR.trim() ? toAbsolute(env.DKM_DATA_DIR.trim()) : null;
+
+  // A processed domain: <data root, default ./data>/<domain>/*.jsonl.
+  if (env.DKM_DOMAIN && env.DKM_DOMAIN.trim()) {
+    const domainDir = join(dataRoot ?? toAbsolute("data"), env.DKM_DOMAIN.trim());
+    const jsonl = jsonlInDir(domainDir);
+    if (jsonl.length > 0) return jsonl;
+  }
+
+  if (dataRoot) {
+    const jsonl = jsonlInDir(dataRoot);
     if (jsonl.length > 0) return jsonl;
   }
 

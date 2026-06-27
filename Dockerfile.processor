@@ -1,0 +1,28 @@
+# The `dkm process` processor image: Node (connectors + orchestrator) + Python (LLM extraction)
+# in one image, so Tier B stays Docker-only. Run via `./scripts/dkm process <docs> --domain <d>`.
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+# Python toolchain for the extraction half (modules/enrichment).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 python3-venv python3-pip \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN corepack enable
+
+# A dedicated venv on PATH, so `python3` is the interpreter with dkm_enrichment installed.
+ENV PATH="/opt/dkm-venv/bin:${PATH}"
+RUN python3 -m venv /opt/dkm-venv
+
+COPY . .
+
+# Node workspace (connectors + processor orchestrator) and the Python extraction package
+# (with the `llm` extra → the real Claude gateway). Installed **editable** so the module stays
+# in the repo tree and the schema-validation gate can locate /app/schemas by walking up.
+RUN pnpm install --frozen-lockfile
+RUN pip install --no-cache-dir -e "./modules/enrichment[llm]"
+
+# docs → [connectors] → canonical docs → [python -m dkm_enrichment extract] → data/<domain>/*.jsonl
+# Args (`/input --domain <d> [--fake]`) are appended by `docker compose run`.
+ENTRYPOINT ["pnpm", "exec", "tsx", "apps/processor/src/process.ts"]

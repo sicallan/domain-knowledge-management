@@ -59,17 +59,19 @@ The gateway seeds from JSONL. With no data of your own it serves the bundled
 
 ---
 
-## Tier B — your domain, your documents *(in progress)*
+## Tier B — your domain, your documents
 
-The target experience:
+Drop a folder of documents (Markdown, plaintext, JSON), name your domain, and let the system
+build the graph:
 
 ```bash
 cp .env.example .env                 # set ANTHROPIC_API_KEY
 ./scripts/dkm process ./my-docs --domain lending
-docker compose up                    # the UI now serves YOUR graph
+DKM_DOMAIN=lending docker compose up   # the UI now serves YOUR graph
+# → http://localhost:5173
 ```
 
-`dkm process` runs the full pipeline over your documents:
+`dkm process` runs the full pipeline over your documents, in Docker (no local Node/Python needed):
 
 ```
 your docs  →  [connectors]  →  canonical documents  →  [LLM extraction]
@@ -77,18 +79,31 @@ your docs  →  [connectors]  →  canonical documents  →  [LLM extraction]
 ```
 
 It writes the typed **intermediate JSONL** to `data/<domain>/` — `extractions.jsonl`
-(typed inventory entries) and `relationships.jsonl` (the edges between them). The gateway picks
-those up automatically (the `./data` volume + `DKM_DATA_DIR`).
+(typed inventory entries) and `relationships.jsonl` (the edges between them), plus a
+`metadata.json` run report. Selecting the domain (`DKM_DOMAIN=lending`) points the gateway at it.
+
+**Try the wiring with no key first** — `--fake` runs the whole pipeline with a deterministic stub
+(produces an empty graph, but proves connectors → extraction → serve end to end):
+
+```bash
+./scripts/dkm process ./my-docs --domain lending --fake
+```
+
+Options: `--domain <name>` (required), `--fake` (no LLM), `--authority <regulatory|scheme|vendor|project|operational>`
+(provenance authority stamped on every assertion; default `operational`).
 
 ### Analyse the intermediate files with your own LLM
 
-The same `data/<domain>/*.jsonl` are plain, typed records — feed them straight to your LLM for
-ad-hoc analysis (gap-finding, contradiction checks, summaries) without touching the UI. A starter
-recipe will live here.
+The `data/<domain>/*.jsonl` are plain, typed records — feed them straight to your LLM for ad-hoc
+analysis (gap-finding, contradiction checks, summaries) without touching the UI:
 
-> **Status:** Tier A is live and validated. The `dkm process` CLI and its processor container are
-> the next deliverable; the gateway, the `./data` data-source switch, and the compose stack that
-> Tier B relies on are already in place.
+```bash
+./scripts/analyse-with-llm.sh lending "Which decisions lack a clear owner or evidence?" | claude -p
+# (pipe to any LLM CLI, or redirect to a file and paste into a chat)
+```
+
+The script assembles a self-contained prompt — the typed entries + relationships + your question —
+that any model can answer over. It's plain text in, plain text out: nothing here is Claude-specific.
 
 ---
 
@@ -98,10 +113,11 @@ The gateway chooses its data source from the environment (set in `docker-compose
 
 | Variable | Meaning |
 |---|---|
-| `DKM_DATA_DIR` | Directory whose `*.jsonl` files are served. Empty/missing → the bundled demo. |
-| `DKM_JSONL` | Explicit comma-separated JSONL paths (takes precedence over `DKM_DATA_DIR`). |
+| `DKM_DOMAIN` | Serve a processed domain — `data/<DKM_DOMAIN>/*.jsonl`. Falls back to the demo if unprocessed. |
+| `DKM_DATA_DIR` | Directory whose `*.jsonl` files are served (default `./data`). Empty/missing → the bundled demo. |
+| `DKM_JSONL` | Explicit comma-separated JSONL paths (takes precedence over the above). |
 | `PORT` | Gateway port (default `4000`). |
-| `ANTHROPIC_API_KEY` | LLM key for `dkm process` extraction (Tier B only). |
+| `ANTHROPIC_API_KEY` | LLM key for `dkm process` extraction (Tier B; not needed with `--fake`). |
 
 ---
 

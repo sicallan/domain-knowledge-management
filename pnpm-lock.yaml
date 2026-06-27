@@ -158,6 +158,22 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0(vitest@2.1.9(@types/node@22.19.21)(jsdom@25.0.1)(msw@2.14.6(@types/node@22.19.21)(typescript@5.9.3)))
 
+  apps/processor:
+    dependencies:
+      '@dkm/source-connectors':
+        specifier: workspace:*
+        version: link:../../modules/source-connectors
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
+      vite-tsconfig-paths:
+        specifier: ^5.1.4
+        version: 5.1.4(typescript@5.9.3)(vite@5.4.21(@types/node@22.19.21))
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.21)(jsdom@25.0.1)(msw@2.14.6(@types/node@22.19.21)(typescript@5.9.3))
+
   modules/knowledge-graph:
     dependencies:
       '@dkm/schema':

@@ -1,0 +1,21 @@
+{
+  "name": "@dkm/processor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The `dkm process` orchestrator: runs the source connectors over a folder of documents, writes the intermediate canonical-docs JSONL, and hands it to the Python extraction pipeline (python -m dkm_enrichment) to produce the typed knowledge-graph JSONL the gateway serves. The TS half of Tier B (QUICKSTART).",
+  "main": "src/process.ts",
+  "scripts": {
+    "process": "tsx src/process.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@dkm/source-connectors": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "vitest": "^2.1.8",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}

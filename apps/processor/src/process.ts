@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SourceAuthority } from "@dkm/source-connectors";
-import { writeCanonicalDocsJsonl } from "./canonical";
+import { writeCanonicalDocsJsonl, writeCanonicalMarkdown } from "./canonical";
 import { runConnectors } from "./connectors";
 
 /**
@@ -129,6 +129,9 @@ export async function runProcess(
   const outDir = join(args.dataDir, args.domain);
   const canonicalPath = join(outDir, "canonical", "canonical-docs.jsonl");
   writeCanonicalDocsJsonl(documents, canonicalPath);
+  // Human-readable companion: each document's extracted Markdown, so a run is verifiable by eye
+  // (notably the PDF text layer) without parsing JSONL.
+  writeCanonicalMarkdown(documents, join(outDir, "canonical", "markdown"));
 
   deps.extract({ canonicalPath, outDir, fake: args.fake, python: args.python });
 

@@ -1,9 +1,9 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { serialiseCanonicalDocs } from "../src/canonical";
+import { markdownFileName, serialiseCanonicalDocs } from "../src/canonical";
 import { runConnectors } from "../src/connectors";
 import { type ExtractRequest, parseArgs, runProcess } from "../src/process";
 
@@ -35,6 +35,24 @@ describe("serialiseCanonicalDocs", () => {
 
   it("is empty for no documents", () => {
     expect(serialiseCanonicalDocs([])).toBe("");
+  });
+});
+
+describe("markdownFileName", () => {
+  it("derives a readable .md name from the source path", () => {
+    const used = new Set<string>();
+    expect(markdownFileName({ sourcePath: "/input/Report_2024.pdf", id: "abc123" }, used)).toBe(
+      "Report_2024.md",
+    );
+  });
+
+  it("disambiguates same-basename sources so neither is overwritten", () => {
+    const used = new Set<string>();
+    const a = markdownFileName({ sourcePath: "/input/a/notes.pdf", id: "id-aaaaaaaa" }, used);
+    const b = markdownFileName({ sourcePath: "/input/b/notes.pdf", id: "id-bbbbbbbb" }, used);
+    expect(a).toBe("notes.md");
+    expect(b).not.toBe(a);
+    expect(b.endsWith(".md")).toBe(true);
   });
 });
 
@@ -77,6 +95,23 @@ describe("runProcess", () => {
       outDir: join(dataDir, "payments"),
       fake: true,
     });
+  });
+
+  it("writes a readable .md per document alongside the canonical JSONL", async () => {
+    const dataDir = mkdtempSync(join(tmpdir(), "dkm-md-"));
+
+    await runProcess(
+      { docsDir: DOCS_DIR, domain: "payments", authority: "scheme", fake: true, dataDir, python: "python3" },
+      { extract: vi.fn() },
+    );
+
+    const mdDir = join(dataDir, "payments", "canonical", "markdown");
+    expect(existsSync(mdDir)).toBe(true);
+    const mdFiles = readdirSync(mdDir).filter((f) => f.endsWith(".md"));
+    expect(mdFiles.length).toBeGreaterThan(0);
+    // The .md carries the document's actual extracted text (the connector's Markdown body).
+    const sample = readFileSync(join(mdDir, mdFiles[0] ?? ""), "utf8");
+    expect(sample.length).toBeGreaterThan(0);
   });
 
   it("errors when the folder has no supported documents", async () => {

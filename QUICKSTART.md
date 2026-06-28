@@ -109,6 +109,27 @@ It writes the typed **intermediate JSONL** to `data/<domain>/` — `extractions.
 Options: `--domain <name>` (required), `--fake` (no LLM), `--authority <regulatory|scheme|vendor|project|operational>`
 (provenance authority stamped on every assertion; default `operational`).
 
+### Normalise duplicate concepts (optional)
+
+Extraction is per-document, so the same concept named slightly differently across documents
+(e.g. *Conflict of Interest* / *Conflicts of Interest*, *Proxy Voting Guidelines* / *WBIM Proxy
+Voting Guidelines*) becomes several near-duplicate nodes. The **normalise** pass merges the ones
+that are genuinely the same — for a clearer picture of the true domain:
+
+```bash
+./scripts/dkm normalise lending          # LLM-adjudicated (needs ANTHROPIC_API_KEY)
+DKM_DOMAIN=lending docker compose up      # serves the cleaned-up graph
+```
+
+A cheap deterministic step first **blocks** look-alike names into small candidate clusters (so most
+entities never reach the LLM); Claude then judges each cluster, merging true synonyms while keeping
+distinct-but-similar concepts apart (e.g. *Scope 1/2/3 Emissions* stay separate, a *Policy* stays
+distinct from its *Guidelines*). It edits `data/<domain>/{extractions,relationships}.jsonl` **in
+place**, backs the originals up to `data/<domain>/pre-normalisation/`, and writes a
+`normalisation-report.json` of exactly what merged into what. `--fake` exercises the wiring with no
+key (merges nothing); `--min-similarity <0-1>` tunes how aggressively names are clustered
+(default `0.67`; lower = more aggressive).
+
 ### Analyse the intermediate files with your own LLM
 
 The `data/<domain>/*.jsonl` are plain, typed records — feed them straight to your LLM for ad-hoc

@@ -34,6 +34,15 @@ contradict them.
 | [04](04-knowledge-explorer-canvas.md) | Knowledge Explorer — graph canvas | UI-3.4 | gateway → `traverse` | Cytoscape.js canvas: render nodes/edges, pan/zoom, lazy expand, filter by layer/type/context, layout modes. The one new interactive render surface. |
 | [05](05-explorer-list-table.md) | Knowledge Explorer — list/table mode | UI-3.5 | gateway → `listEntries` | Tabular view of the same data: sort, group, faceted filters (layer, type, lifecycle, owner, confidence, date); toggles with the canvas. The accessible fallback for the graph. |
 | [06](06-context-panel.md) | Context panel | UI-3.6 | gateway → `getEntry`/`traverse` | Slide-out detail panel: full entry detail + relationships + evidence/provenance on selection, from anywhere (canvas, list, search). Closes the explore→inspect loop. |
+| [07](07-domain-map-screen.md) | Domain Map screen | §Views (step 1.5) | gateway → `domainMap` | Data-driven L1 view of the *actual ingested* domain: subdomains → bounded-context cards (concept/service counts) → cross-context relationships. Replaces the stale `/views/domain-map` placeholder. |
+
+> **View screens (07+).** The data-track projections (Domain Map, Coverage Map, Gap Analysis) ship as
+> GraphQL queries, but beyond the Explorer they still need **presentation screens** — today their
+> routes are `ViewPlaceholder`s with stale "delivered in UI-3.x" copy. Feature 07 (Domain Map) is the
+> first; Coverage Map / Gap Analysis are anticipated follow-ups (08/09) on the same pattern. These add
+> **no backend** — the projectors and resolvers already exist. Note the deliberate split: the
+> **Overview** screen (#78) shows the *conceptual model* (how the tool sees the world, no data); the
+> **Domain Map** shows the *actual ingested* domain.
 
 ## Build order
 

@@ -110,6 +110,26 @@ export interface ProcessResult {
   documentCount: number;
 }
 
+/**
+ * Raised when the extraction subprocess fails (e.g. the LLM step is out of credits). The
+ * connectors have already parsed and saved the canonical docs, so this replaces the raw
+ * `Command failed: python3 …` with guidance that the parsed work is safe and how to recover.
+ */
+export class ExtractionError extends Error {
+  constructor(
+    readonly canonicalPath: string,
+    readonly fake: boolean,
+    override readonly cause: unknown,
+  ) {
+    const fakeHint = fake ? "" : ", or pass --fake to exercise the pipeline without the LLM";
+    super(
+      `extraction failed (see the message above). Your documents are parsed and saved at ` +
+        `${canonicalPath} — resolve the issue and re-run${fakeHint}.`,
+    );
+    this.name = "ExtractionError";
+  }
+}
+
 export async function runProcess(
   args: ProcessArgs,
   deps: ProcessDeps = { extract: defaultExtract },
@@ -123,7 +143,13 @@ export async function runProcess(
   const canonicalPath = join(outDir, "canonical", "canonical-docs.jsonl");
   writeCanonicalDocsJsonl(documents, canonicalPath);
 
-  deps.extract({ canonicalPath, outDir, fake: args.fake, python: args.python });
+  try {
+    deps.extract({ canonicalPath, outDir, fake: args.fake, python: args.python });
+  } catch (cause) {
+    // The extractor prints its own clean message (stdio is inherited); surface guidance that the
+    // parsed docs are intact instead of the bare "Command failed: python3 …" from execFileSync.
+    throw new ExtractionError(canonicalPath, args.fake, cause);
+  }
 
   return { outDir, canonicalPath, documentCount: documents.length };
 }

@@ -54,17 +54,59 @@ export function colourOfLayer(layer: string): string {
   return LAYER_COLOUR[layer] ?? "hsl(215 16% 47%)";
 }
 
-/** The three layout modes (UI-3.4 §7), mapped to Cytoscape built-in layout names. */
+/** The three layout modes (UI-3.4 §7), mapped to Cytoscape layout names. */
 export type LayoutMode = "force" | "hierarchical" | "radial";
 
 const LAYOUT_NAME: Record<LayoutMode, string> = {
-  force: "cose", // force-directed (fcose is the ADR-0005 upgrade)
+  force: "fcose", // separation-aware force-directed (ADR-0005); registered in GraphCanvas
   hierarchical: "breadthfirst", // layered (dagre is the upgrade)
   radial: "concentric",
 };
 
 export function layoutNameFor(mode: LayoutMode): string {
   return LAYOUT_NAME[mode];
+}
+
+/** A Cytoscape layout-config bag (extension fields like fcose's `nodeSeparation` aren't in core types). */
+export interface GraphLayoutOptions {
+  name: string;
+  nodeDimensionsIncludeLabels: boolean;
+  padding: number;
+  [option: string]: unknown;
+}
+
+/**
+ * Layout configuration tuned so **nodes and their labels never overlap**, however large the
+ * explored graph gets (enhancement). The shared knobs: `nodeDimensionsIncludeLabels` sizes each
+ * node by its label box (so labels don't collide with neighbours) and a viewport `padding`.
+ * Per mode:
+ *  - **force → fcose**: strong `nodeSeparation`/`nodeRepulsion` + component packing — spreads even
+ *    dense, disconnected graphs without clumping (the old bare `cose` clumped/overlapped);
+ *  - **hierarchical → breadthfirst** and **radial → concentric**: built-ins with `avoidOverlap`
+ *    plus extra `spacingFactor` / `minNodeSpacing`.
+ */
+export function layoutOptionsFor(mode: LayoutMode): GraphLayoutOptions {
+  const name = layoutNameFor(mode);
+  const shared = { name, nodeDimensionsIncludeLabels: true, padding: 40 };
+  switch (mode) {
+    case "force":
+      return {
+        ...shared,
+        quality: "proof",
+        randomize: true,
+        animate: false,
+        nodeSeparation: 120,
+        nodeRepulsion: 12000,
+        idealEdgeLength: 120,
+        edgeElasticity: 0.45,
+        gravity: 0.25,
+        packComponents: true,
+      };
+    case "hierarchical":
+      return { ...shared, directed: true, avoidOverlap: true, spacingFactor: 1.5 };
+    case "radial":
+      return { ...shared, avoidOverlap: true, minNodeSpacing: 50 };
+  }
 }
 
 /** The Cytoscape stylesheet: layer-coloured nodes, labelled edges, and a `selected` class. */

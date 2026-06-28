@@ -1,6 +1,11 @@
-import cytoscape, { type Core, type ElementDefinition } from "cytoscape";
+import cytoscape, { type Core, type ElementDefinition, type LayoutOptions } from "cytoscape";
+import fcose from "cytoscape-fcose";
 import { useEffect, useRef } from "react";
-import { buildStylesheet, layoutNameFor, type LayoutMode } from "./encoding";
+import { buildStylesheet, layoutOptionsFor, type LayoutMode } from "./encoding";
+
+// Register the fcose layout extension once. Guarded via optional-chaining so the test mock —
+// which stubs the `cytoscape` module without a `use` method — doesn't blow up on import.
+(cytoscape as unknown as { use?: (ext: unknown) => void }).use?.(fcose);
 
 export interface GraphCanvasProps {
   /** The renderer elements from the adapter (`toCytoscapeElements`). */
@@ -33,7 +38,7 @@ export function GraphCanvas({ elements, layout, selectedId, onSelect }: GraphCan
       container: containerRef.current,
       elements,
       style: buildStylesheet(),
-      layout: { name: layoutNameFor(layout) },
+      layout: layoutOptionsFor(layout) as unknown as LayoutOptions,
     });
     cy.on("tap", "node", (event) => onSelectRef.current(event.target.id()));
     cyRef.current = cy;
@@ -50,7 +55,7 @@ export function GraphCanvas({ elements, layout, selectedId, onSelect }: GraphCan
     if (!cy) return;
     cy.elements().remove();
     cy.add(elements);
-    cy.layout({ name: layoutNameFor(layout) }).run();
+    cy.layout(layoutOptionsFor(layout) as unknown as LayoutOptions).run();
   }, [elements, layout]);
 
   // Reflect the current selection.

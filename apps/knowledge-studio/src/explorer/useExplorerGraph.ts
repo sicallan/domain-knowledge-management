@@ -1,7 +1,35 @@
 import { useCallback, useEffect, useState } from "react";
 import { useClient } from "urql";
+import { knownInventoryTypes } from "./encoding";
 import { mergeSubgraphs, type Subgraph } from "./graph-adapter";
 import { ROOTS_QUERY, TRAVERSE_QUERY } from "./queries";
+
+/**
+ * Anchor types to seed the canvas from, in layer-priority order: the L1 structural anchors
+ * (Subdomain → BoundedContext → DomainConcept) first, then every other known type as a safety
+ * net. The hook seeds from the **first type that has entries**, so a domain whose extraction
+ * produced no Subdomains/BoundedContexts (the current `dkm process` reality) still renders from
+ * its DomainConcepts rather than showing a blank graph. Deduplicated, anchors kept first.
+ */
+export const ROOT_SEED_TYPES: string[] = [
+  ...new Set(["Subdomain", "BoundedContext", "DomainConcept", ...knownInventoryTypes()]),
+];
+
+/**
+ * Probe anchor types in priority order and return the ids of the first non-empty one — the
+ * canvas's seed set. `probe(type)` lists a few entries of that type (the gateway lists one type
+ * at a time); seeding stops as soon as a type yields entries, so the common case is one query.
+ */
+export async function findSeedIds(
+  probe: (type: string) => Promise<string[]>,
+  seedTypes: string[] = ROOT_SEED_TYPES,
+): Promise<string[]> {
+  for (const type of seedTypes) {
+    const ids = await probe(type);
+    if (ids.length > 0) return ids;
+  }
+  return [];
+}
 
 /** The raw GraphQL shapes (before normalisation to the renderer's `Subgraph`). */
 interface RawNode {
@@ -85,16 +113,20 @@ export function useExplorerGraph(depth = 3): ExplorerGraph {
     void (async () => {
       setLoading(true);
       setError(null);
-      const roots = await client.query<RawRoots>(ROOTS_QUERY, { limit: 5 }).toPromise();
+      // Seed from the best available anchor type (Subdomain → … → DomainConcept → …), so a
+      // domain with no extracted Subdomains still renders rather than showing a blank canvas.
+      const seedIds = await findSeedIds(async (type) => {
+        const roots = await client.query<RawRoots>(ROOTS_QUERY, { type, limit: 5 }).toPromise();
+        if (roots.error) {
+          setError(roots.error.message);
+          return [];
+        }
+        return (roots.data?.entries.items ?? []).map((item) => item.id);
+      });
       if (cancelled) return;
-      if (roots.error) {
-        setError(roots.error.message);
-        setLoading(false);
-        return;
-      }
       let accumulated: Subgraph = { nodes: [], edges: [] };
-      for (const root of roots.data?.entries.items ?? []) {
-        const next = await traverseFrom(root.id, depth);
+      for (const id of seedIds) {
+        const next = await traverseFrom(id, depth);
         if (next) accumulated = mergeSubgraphs(accumulated, next);
       }
       if (!cancelled) {

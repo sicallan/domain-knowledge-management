@@ -114,6 +114,28 @@ describe("runProcess", () => {
     expect(sample.length).toBeGreaterThan(0);
   });
 
+  it("preserves the parsed canonical docs and reports cleanly when extraction fails", async () => {
+    const dataDir = mkdtempSync(join(tmpdir(), "dkm-fail-"));
+
+    const run = runProcess(
+      { docsDir: DOCS_DIR, domain: "payments", authority: "scheme", fake: false, dataDir, python: "python3" },
+      {
+        extract: () => {
+          // Mimic the Python subprocess exiting non-zero (e.g. out of API credits).
+          throw new Error("Command failed: python3 -m dkm_enrichment extract …");
+        },
+      },
+    );
+
+    // The user-facing error reassures that parsed docs are safe — not the raw "Command failed".
+    await expect(run).rejects.toThrow(/parsed and saved/);
+    await expect(run).rejects.not.toThrow(/Command failed/);
+
+    // The canonical-docs bridge file was written before extraction, so it survives the failure.
+    const canonical = join(dataDir, "payments", "canonical", "canonical-docs.jsonl");
+    expect(readFileSync(canonical, "utf8").length).toBeGreaterThan(0);
+  });
+
   it("errors when the folder has no supported documents", async () => {
     const empty = mkdtempSync(join(tmpdir(), "dkm-empty-"));
     await expect(

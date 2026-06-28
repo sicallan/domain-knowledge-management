@@ -18,7 +18,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from dkm_enrichment.gateway import FakeGateway, LLMGateway
+from dkm_enrichment.gateway import FakeGateway, LLMGateway, LLMGatewayError
 from dkm_enrichment.models import (
     PHASE_0A_L1_TYPES,
     PHASE_2_BEHAVIOUR_TYPES,
@@ -85,8 +85,29 @@ async def _run_extract(args: argparse.Namespace) -> int:
     )
     config = ExtractionConfig(targetTypes=target_types, model=args.model)
 
-    pipeline = ExtractionPipeline(build_gateway(fake=args.fake))
-    result = await pipeline.run(documents, config, staging)
+    try:
+        gateway = build_gateway(fake=args.fake)
+    except LLMGatewayError as exc:
+        # Misconfiguration before any call (no key / SDK missing) — clean message, no traceback.
+        shutil.rmtree(staging, ignore_errors=True)
+        print(f"✗ {exc}", file=sys.stderr)
+        return 1
+
+    pipeline = ExtractionPipeline(gateway)
+    try:
+        result = await pipeline.run(documents, config, staging)
+    except LLMGatewayError as exc:
+        # The LLM step failed (out of credits, rate limit, network …) but the connectors already
+        # parsed and saved the documents — reassure the user and point at the intact canonical file.
+        shutil.rmtree(staging, ignore_errors=True)
+        print(f"✗ {exc}", file=sys.stderr)
+        print(
+            f"  Your documents are parsed and intact at {source}; only the LLM extraction step "
+            "failed. Resolve the issue above and re-run, or pass --fake to exercise the pipeline "
+            "without the LLM.",
+            file=sys.stderr,
+        )
+        return 1
 
     # Promote the run-id-prefixed files to stable, canonical names the gateway watches.
     for produced, canonical in (

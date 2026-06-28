@@ -16,6 +16,7 @@ import os
 import time
 from typing import Any
 
+from dkm_enrichment.gateway.errors import LLMGatewayError, friendly_api_message
 from dkm_enrichment.models import LLMOptions, LLMResponse, LLMUsage
 
 _TOOL_NAME = "emit_structured"
@@ -30,15 +31,17 @@ class ClaudeGateway:
         try:
             import anthropic
         except ImportError as exc:  # pragma: no cover - exercised only with the llm extra
-            raise RuntimeError(
+            raise LLMGatewayError(
                 "The Anthropic SDK is not installed. Install the optional extra: "
                 'pip install -e ".[dev,llm]"'
             ) from exc
         key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not key:
-            raise RuntimeError("ANTHROPIC_API_KEY is not set; cannot construct ClaudeGateway.")
+            raise LLMGatewayError("ANTHROPIC_API_KEY is not set; cannot construct ClaudeGateway.")
         self._client = anthropic.Anthropic(api_key=key)
         self._default_model = default_model
+        # The base of both APIStatusError (has .status_code) and APIConnectionError (none).
+        self._api_error_type = anthropic.APIError
 
     async def extract_structured(
         self,
@@ -48,20 +51,27 @@ class ClaudeGateway:
     ) -> LLMResponse:
         opts = options or LLMOptions(model=self._default_model)
         started = time.monotonic()
-        message = self._client.messages.create(
-            model=opts.model,
-            max_tokens=opts.maxTokens,
-            temperature=opts.temperature,
-            tools=[
-                {
-                    "name": _TOOL_NAME,
-                    "description": "Emit the extracted structured data conforming to the schema.",
-                    "input_schema": schema,
-                }
-            ],
-            tool_choice={"type": "tool", "name": _TOOL_NAME},
-            messages=[{"role": "user", "content": prompt}],
-        )
+        try:
+            message = self._client.messages.create(
+                model=opts.model,
+                max_tokens=opts.maxTokens,
+                temperature=opts.temperature,
+                tools=[
+                    {
+                        "name": _TOOL_NAME,
+                        "description": "Emit the extracted structured data for the schema.",
+                        "input_schema": schema,
+                    }
+                ],
+                tool_choice={"type": "tool", "name": _TOOL_NAME},
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except self._api_error_type as exc:
+            # Translate any provider HTTP/connection failure into a clean, actionable message
+            # (out of credits, bad key, rate limit, network) — the CLI prints it without a trace.
+            status = getattr(exc, "status_code", None)
+            detail = str(getattr(exc, "message", None) or exc)
+            raise LLMGatewayError(friendly_api_message(status, detail)) from exc
         latency = time.monotonic() - started
         result = _first_tool_input(message)
         usage = getattr(message, "usage", None)

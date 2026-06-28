@@ -1,9 +1,14 @@
 import { gql } from "urql";
 
-/** Root candidates for the initial canvas view — the subdomains (L1 anchors). */
+/**
+ * Root candidates for the initial canvas view, for **one** anchor type. The hook probes a
+ * priority-ordered list of anchor types ({@link ROOT_SEED_TYPES}) and seeds from the first that
+ * has entries — so a Subdomain-less domain (a raw `dkm process` run) still renders. The port
+ * lists one type at a time, hence the `$type` arg rather than an "all entries" query.
+ */
 export const ROOTS_QUERY = gql`
-  query ExplorerRoots($limit: Int) {
-    entries(type: "Subdomain", limit: $limit) {
+  query ExplorerRoots($type: String, $limit: Int) {
+    entries(type: $type, limit: $limit) {
       items {
         id
       }

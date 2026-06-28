@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SourceAuthority } from "@dkm/source-connectors";
-import { writeCanonicalDocsJsonl } from "./canonical";
+import { writeCanonicalDocsJsonl, writeCanonicalMarkdown } from "./canonical";
 import { runConnectors } from "./connectors";
 
 /**
@@ -134,14 +134,24 @@ export async function runProcess(
   args: ProcessArgs,
   deps: ProcessDeps = { extract: defaultExtract },
 ): Promise<ProcessResult> {
-  const documents = await runConnectors(args.docsDir, args.authority);
+  const { documents, errors } = await runConnectors(args.docsDir, args.authority);
+
+  // Skipped files (e.g. scanned/image-only PDFs with no text layer) are surfaced, not swallowed.
+  for (const error of errors) {
+    console.warn(`  ⚠ skipped ${error.documentPath}: ${error.error}`);
+  }
+
   if (documents.length === 0) {
-    throw new Error(`no supported documents (.md / .txt / .json) under ${args.docsDir}`);
+    const skipped = errors.length > 0 ? ` (${errors.length} file(s) skipped — see warnings above)` : "";
+    throw new Error(`no supported documents (.md / .txt / .json / .pdf) under ${args.docsDir}${skipped}`);
   }
 
   const outDir = join(args.dataDir, args.domain);
   const canonicalPath = join(outDir, "canonical", "canonical-docs.jsonl");
   writeCanonicalDocsJsonl(documents, canonicalPath);
+  // Human-readable companion: each document's extracted Markdown, so a run is verifiable by eye
+  // (notably the PDF text layer) without parsing JSONL.
+  writeCanonicalMarkdown(documents, join(outDir, "canonical", "markdown"));
 
   try {
     deps.extract({ canonicalPath, outDir, fake: args.fake, python: args.python });

@@ -61,7 +61,7 @@ The gateway seeds from JSONL. With no data of your own it serves the bundled
 
 ## Tier B — your domain, your documents
 
-Point it at a folder of documents (Markdown, plaintext, JSON), name your domain, and let the
+Point it at a folder of documents (Markdown, plaintext, JSON, PDF), name your domain, and let the
 system build the graph:
 
 ```bash
@@ -73,7 +73,7 @@ DKM_DOMAIN=lending docker compose up   # the UI now serves YOUR graph
 
 **Where do the docs go?** Nowhere special — you pass the **path** to wherever they already are.
 The folder is mounted read-only into the processor; it is never copied into the repo. The path
-can be absolute or relative, and the folder is scanned recursively for `.md` / `.txt` / `.json`:
+can be absolute or relative, and the folder is scanned recursively for `.md` / `.txt` / `.json` / `.pdf`:
 
 ```bash
 ./scripts/dkm process /home/you/work/lending-docs --domain lending   # absolute
@@ -82,6 +82,11 @@ can be absolute or relative, and the folder is scanned recursively for `.md` / `
 
 Run `./scripts/dkm` from the repo root (so Docker Compose finds its config and the `./data`
 volume). The only thing written into the repo is the output — `data/<domain>/`.
+
+> **PDFs:** extraction is **basic** — it pulls the text layer (one `## Page N` section per page).
+> Text-based PDFs work well; **scanned / image-only PDFs have no text layer**, so they're
+> skipped-and-reported (you'll see a `⚠ skipped …` line), not silently emitted as blank. A richer
+> layout-aware connector (tables, figures — e.g. a LlamaParse-style adapter) is a planned add-on.
 
 `dkm process` runs the full pipeline over your documents, in Docker (no local Node/Python needed):
 

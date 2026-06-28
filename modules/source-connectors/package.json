@@ -9,6 +9,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@dkm/schema": "workspace:*"
+    "@dkm/schema": "workspace:*",
+    "unpdf": "^1.6.2"
+  },
+  "devDependencies": {
+    "pdf-lib": "^1.17.1"
   }
 }

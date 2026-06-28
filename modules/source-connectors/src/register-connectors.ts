@@ -1,16 +1,18 @@
 import { FilesystemConnector } from "./filesystem-connector";
 import { JsonConnector } from "./json-connector";
+import { PdfConnector } from "./pdf-connector";
 import { DefaultConnectorRegistry } from "./registry";
 import type { ConnectorRegistry } from "./port";
 
 /**
  * The single explicit registration point (spec 004 Decision 4). Adding a new
- * connector type — e.g. Feature 06's `json` — is a one-line addition here and
- * requires no change to the registry or to existing connectors (OCP).
+ * connector type — e.g. Feature 06's `json`, or the `pdf` connector — is a one-line
+ * addition here and requires no change to the registry or existing connectors (OCP).
  */
 export function registerConnectors(registry: ConnectorRegistry): void {
   registry.register(new FilesystemConnector());
   registry.register(new JsonConnector()); // Feature 06 — second connector (OCP)
+  registry.register(new PdfConnector()); // basic PDF text extraction (OCP)
 }
 
 /** Convenience: a fresh registry with all built-in connectors registered. */

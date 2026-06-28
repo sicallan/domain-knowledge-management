@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./shell/AppLayout";
 import { ExplorerScreen } from "./screens/ExplorerScreen";
 import { NotFound } from "./screens/NotFound";
+import { OverviewScreen } from "./screens/OverviewScreen";
 import { ViewPlaceholder } from "./screens/ViewPlaceholder";
 
 /**
@@ -14,6 +15,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/explorer" replace />} />
+        <Route path="overview" element={<OverviewScreen />} />
         <Route path="explorer" element={<ExplorerScreen />} />
         <Route path="views/domain-map" element={<ViewPlaceholder title="Domain Map" step="UI-3.4" />} />
         <Route path="views/coverage" element={<ViewPlaceholder title="Coverage Map" step="UI-3.5" />} />

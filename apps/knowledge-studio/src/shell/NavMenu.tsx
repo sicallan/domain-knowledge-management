@@ -4,6 +4,7 @@ import type { NavItem } from "./types";
 
 /** The default single-persona nav (UI-3.1 §11: per-persona tailoring is additive later). */
 export const DEFAULT_NAV: NavItem[] = [
+  { to: "/overview", label: "Overview" },
   { to: "/explorer", label: "Knowledge Explorer" },
   { to: "/views/domain-map", label: "Domain Map" },
   { to: "/views/coverage", label: "Coverage Map" },

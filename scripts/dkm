@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # dkm — the DKM quickstart CLI (Tier B).
 #
-#   ./scripts/dkm process <docs-dir> --domain <name> [--fake]
+#   ./scripts/dkm process   <docs-dir> --domain <name> [--fake]
+#   ./scripts/dkm normalise  <name> [--fake]
 #
-# Runs the document processor in Docker: your docs folder is mounted read-only at /input and
-# extracted into ./data/<name>/*.jsonl. Then `DKM_DOMAIN=<name> docker compose up` serves it.
+# `process` runs the document processor in Docker: your docs folder is mounted read-only at
+# /input and extracted into ./data/<name>/*.jsonl.
+# `normalise` runs the LLM-adjudicated entity-resolution pass over ./data/<name>/*.jsonl in
+# place (merging same-concept duplicates; originals backed up to ./data/<name>/pre-normalisation/).
+# Then `DKM_DOMAIN=<name> docker compose up` serves the result.
 set -euo pipefail
 
 usage() {
   echo "usage: ./scripts/dkm process <docs-dir> --domain <name> [--fake] [--authority <a>]" >&2
+  echo "       ./scripts/dkm normalise <name> [--fake]" >&2
   exit 1
 }
 
@@ -29,6 +34,18 @@ case "$cmd" in
       -e HOME=/tmp \
       -v "${docs_abs}:/input:ro" \
       processor /input "$@"
+    ;;
+  normalise|normalize)
+    name="${1:-}"
+    [ -n "$name" ] || { echo "✗ missing <name>" >&2; usage; }
+    shift
+    # Run the Python normaliser in the processor image (override the TS entrypoint). Needs
+    # ANTHROPIC_API_KEY (passed through by compose) unless --fake. Edits ./data/<name> in place.
+    exec docker compose --profile process run --rm \
+      --user "$(id -u):$(id -g)" \
+      -e HOME=/tmp \
+      --entrypoint python3 \
+      processor -m dkm_enrichment normalise "/app/data/${name}" "$@"
     ;;
   *)
     usage

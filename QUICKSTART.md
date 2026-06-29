@@ -130,6 +130,9 @@ place**, backs the originals up to `data/<domain>/pre-normalisation/`, and write
 key (merges nothing); `--min-similarity <0-1>` tunes how aggressively names are clustered
 (default `0.67`; lower = more aggressive).
 
+→ For how it works (the block → adjudicate → merge cascade, tuning, and the audit report), see
+[docs/entity-normalisation.md](docs/entity-normalisation.md).
+
 ### Analyse the intermediate files with your own LLM
 
 The `data/<domain>/*.jsonl` are plain, typed records — feed them straight to your LLM for ad-hoc

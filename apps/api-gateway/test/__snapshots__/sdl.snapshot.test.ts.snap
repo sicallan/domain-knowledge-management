@@ -57,6 +57,28 @@ type BehaviourFlowView {
   steps: [BehaviourFlowStep!]!
 }
 
+type CapabilityCounts {
+  concepts: Int!
+  decisions: Int!
+  invariants: Int!
+  realisations: Int!
+  rules: Int!
+}
+
+type CapabilityMapView {
+  roots: [CapabilityNode!]!
+}
+
+type CapabilityNode {
+  children: [CapabilityNode!]!
+  counts: CapabilityCounts!
+  descendantCount: Int!
+  id: ID!
+  level: Int
+  name: String!
+  orphaned: Boolean!
+}
+
 type ContextRelationship {
   targetContextId: String!
   type: String!
@@ -201,6 +223,11 @@ type Query {
   A single orchestration flow projected as ordered steps with decision points.
   """
   behaviourFlow(flowId: ID!): BehaviourFlowView!
+
+  """
+  The BusinessCapability hierarchy (EA business-function map): roots → children, each with attached-evidence counts.
+  """
+  capabilityMap(depth: Int, root: String): CapabilityMapView!
 
   """
   The L2 Vendor Coverage Map: L1 rows × vendor columns, with roll-up status.

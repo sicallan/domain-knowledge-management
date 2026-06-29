@@ -7,6 +7,7 @@ export const DEFAULT_NAV: NavItem[] = [
   { to: "/overview", label: "Overview" },
   { to: "/explorer", label: "Knowledge Explorer" },
   { to: "/views/domain-map", label: "Domain Map" },
+  { to: "/views/capability-map", label: "Capability Map" },
   { to: "/views/coverage", label: "Coverage Map" },
   { to: "/views/gap", label: "Gap Analysis" },
 ];

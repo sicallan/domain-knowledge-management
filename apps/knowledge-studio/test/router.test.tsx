@@ -21,6 +21,11 @@ describe("routing (criterion 2)", () => {
     expect(screen.queryByText(/This view is delivered/)).not.toBeInTheDocument();
   });
 
+  it("resolves /views/capability-map to the Capability Map screen", () => {
+    renderWithProviders(<AppRoutes />, { route: "/views/capability-map" });
+    expect(screen.getByRole("heading", { name: "Capability Map", level: 1 })).toBeInTheDocument();
+  });
+
   it("resolves a still-placeholder view route (Coverage Map)", () => {
     renderWithProviders(<AppRoutes />, { route: "/views/coverage" });
     expect(screen.getByRole("heading", { name: "Coverage Map" })).toBeInTheDocument();

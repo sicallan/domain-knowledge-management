@@ -9,6 +9,7 @@ import { GraphQueryService } from "@dkm/query";
 import type { QueryService } from "@dkm/query";
 import {
   BehaviourFlowProjector,
+  CapabilityMapProjector,
   DefaultViewEngine,
   DomainMapProjector,
   GapAnalysisProjector,
@@ -128,6 +129,7 @@ export async function seedInMemoryGraph(options: SeedOptions = {}): Promise<Seed
   const queryService = new GraphQueryService(graph);
   const views = new DefaultViewEngine(queryService);
   views.registerProjector(new DomainMapProjector(queryService));
+  views.registerProjector(new CapabilityMapProjector(queryService));
   views.registerProjector(new BehaviourFlowProjector(queryService));
   views.registerProjector(new VendorCoverageProjector(queryService));
   views.registerProjector(new GapAnalysisProjector(queryService));

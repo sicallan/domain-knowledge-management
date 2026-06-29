@@ -6,6 +6,9 @@ import type {
   BehaviourFlowStep,
   BehaviourFlowTransition,
   BehaviourFlowView,
+  CapabilityCounts,
+  CapabilityMapView,
+  CapabilityNode,
   ContextRelationship,
   CrossContextRelationship,
   DomainMapContext,
@@ -80,6 +83,38 @@ const DomainMapViewRef = builder.objectRef<DomainMapView>("DomainMapView").imple
       type: [CrossContextRelationshipRef],
       resolve: (v) => v.crossContextRelationships,
     }),
+  }),
+});
+
+// --- Capability Map --------------------------------------------------------
+
+const CapabilityCountsRef = builder.objectRef<CapabilityCounts>("CapabilityCounts").implement({
+  fields: (t) => ({
+    rules: t.exposeInt("rules"),
+    invariants: t.exposeInt("invariants"),
+    decisions: t.exposeInt("decisions"),
+    concepts: t.exposeInt("concepts"),
+    realisations: t.exposeInt("realisations"),
+  }),
+});
+
+// Recursive: declare the ref, then implement it so `children` can reference itself.
+const CapabilityNodeRef = builder.objectRef<CapabilityNode>("CapabilityNode");
+CapabilityNodeRef.implement({
+  fields: (t) => ({
+    id: t.exposeID("id"),
+    name: t.exposeString("name"),
+    level: t.exposeInt("level", { nullable: true }),
+    orphaned: t.exposeBoolean("orphaned"),
+    descendantCount: t.exposeInt("descendantCount"),
+    counts: t.field({ type: CapabilityCountsRef, resolve: (n) => n.counts }),
+    children: t.field({ type: [CapabilityNodeRef], resolve: (n) => n.children }),
+  }),
+});
+
+const CapabilityMapViewRef = builder.objectRef<CapabilityMapView>("CapabilityMapView").implement({
+  fields: (t) => ({
+    roots: t.field({ type: [CapabilityNodeRef], resolve: (v) => v.roots }),
   }),
 });
 
@@ -263,6 +298,20 @@ builder.queryFields((t) => ({
       const result = await ctx.views.getView<DomainMapView>(
         "domain-map",
         { subdomain: args.subdomain ?? undefined, depth: args.depth ?? undefined },
+        ctx.context,
+      );
+      return result.data;
+    },
+  }),
+  capabilityMap: t.field({
+    type: CapabilityMapViewRef,
+    description:
+      "The BusinessCapability hierarchy (EA business-function map): roots → children, each with attached-evidence counts.",
+    args: { root: t.arg.string(), depth: t.arg.int() },
+    resolve: async (_root, args, ctx) => {
+      const result = await ctx.views.getView<CapabilityMapView>(
+        "capability-map",
+        { root: args.root ?? undefined, depth: args.depth ?? undefined },
         ctx.context,
       );
       return result.data;

@@ -39,6 +39,57 @@ const STANDALONE_FIXTURE: Record<string, unknown> = {
       { source: "bc-authorisation", target: "bc-fraud", type: "checks", strength: 2 },
     ],
   },
+  capabilityMap: {
+    roots: [
+      {
+        id: "cap-payments",
+        name: "Payments Processing",
+        level: 1,
+        orphaned: false,
+        descendantCount: 2,
+        counts: { rules: 0, invariants: 0, decisions: 0, concepts: 0, realisations: 0 },
+        children: [
+          {
+            id: "cap-authz-cap",
+            name: "Authorisation",
+            level: 2,
+            orphaned: false,
+            descendantCount: 0,
+            counts: { rules: 1, invariants: 0, decisions: 1, concepts: 0, realisations: 1 },
+            children: [],
+          },
+          {
+            id: "cap-settle-cap",
+            name: "Settlement",
+            level: 2,
+            orphaned: false,
+            descendantCount: 0,
+            counts: { rules: 0, invariants: 0, decisions: 0, concepts: 0, realisations: 0 },
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "cap-risk-comp",
+        name: "Risk & Compliance",
+        level: 1,
+        orphaned: false,
+        descendantCount: 1,
+        counts: { rules: 0, invariants: 0, decisions: 0, concepts: 0, realisations: 0 },
+        children: [
+          {
+            id: "cap-fraud-mgmt",
+            name: "Fraud Management",
+            level: 2,
+            orphaned: false,
+            descendantCount: 0,
+            counts: { rules: 0, invariants: 1, decisions: 0, concepts: 0, realisations: 0 },
+            children: [],
+          },
+        ],
+      },
+    ],
+  },
 };
 
 export const browserHandlers = [

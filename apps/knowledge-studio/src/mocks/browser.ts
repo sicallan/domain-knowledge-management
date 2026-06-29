@@ -13,8 +13,31 @@ import { setupWorker } from "msw/browser";
 
 const STANDALONE_FIXTURE: Record<string, unknown> = {
   domainMap: {
-    subdomains: [{ id: "sd-payments", name: "Payments", contexts: [] }],
-    crossContextRelationships: [],
+    subdomains: [
+      {
+        id: "sd-payments",
+        name: "Payments",
+        contexts: [
+          {
+            id: "bc-authorisation",
+            name: "Authorisation",
+            conceptCount: 4,
+            serviceCount: 1,
+            relationships: [{ targetContextId: "bc-fraud", type: "checks" }],
+          },
+          { id: "bc-settlement", name: "Settlement", conceptCount: 3, serviceCount: 1, relationships: [] },
+          { id: "bc-refunds", name: "Refunds", conceptCount: 2, serviceCount: 0, relationships: [] },
+        ],
+      },
+      {
+        id: "sd-risk",
+        name: "Risk & Fraud",
+        contexts: [{ id: "bc-fraud", name: "Fraud Scoring", conceptCount: 2, serviceCount: 1, relationships: [] }],
+      },
+    ],
+    crossContextRelationships: [
+      { source: "bc-authorisation", target: "bc-fraud", type: "checks", strength: 2 },
+    ],
   },
 };
 

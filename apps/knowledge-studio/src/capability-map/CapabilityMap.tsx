@@ -21,6 +21,9 @@ function countSummary(counts: CapabilityCounts): string {
 
 function CapabilityTreeNode({ node }: { node: CapabilityNode }) {
   const summary = countSummary(node.counts);
+  const children = node.children ?? [];
+  // `children` absent (not just empty) marks the fetch-depth boundary — there may be more below.
+  const truncated = node.children === undefined && node.descendantCount > 0;
   return (
     <li>
       <div className="flex flex-wrap items-baseline gap-x-2 py-1">
@@ -32,12 +35,17 @@ function CapabilityTreeNode({ node }: { node: CapabilityNode }) {
         )}
         {summary && <span className="text-sm text-muted-foreground">— {summary}</span>}
       </div>
-      {node.children.length > 0 && (
+      {children.length > 0 && (
         <ul className="ml-4 border-l border-border/60 pl-3">
-          {node.children.map((child) => (
+          {children.map((child) => (
             <CapabilityTreeNode key={child.id} node={child} />
           ))}
         </ul>
+      )}
+      {truncated && (
+        <p className="ml-4 pl-3 text-xs text-muted-foreground">
+          +{node.descendantCount} deeper {node.descendantCount === 1 ? "capability" : "capabilities"} (not shown)
+        </p>
       )}
     </li>
   );

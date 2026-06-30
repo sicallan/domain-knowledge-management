@@ -64,4 +64,16 @@ describe("CapabilityMap (presentational)", () => {
     const mysteryItem = screen.getByText("Mystery").closest("li")!;
     expect(within(mysteryItem).getByText(/orphaned/)).toBeInTheDocument();
   });
+
+  it("renders a truncation hint (not a crash) when children are absent at the fetch boundary", () => {
+    // A deep node whose `children` field was not fetched (undefined) but has a non-zero subtree.
+    const truncated: CapabilityMapView = {
+      roots: [
+        { id: "c-deep", name: "Deep Function", level: 1, orphaned: false, descendantCount: 7, counts: { ...z } },
+      ],
+    };
+    render(<CapabilityMap view={truncated} />);
+    expect(screen.getByText("Deep Function")).toBeInTheDocument();
+    expect(screen.getByText(/\+7 deeper capabilities \(not shown\)/)).toBeInTheDocument();
+  });
 });

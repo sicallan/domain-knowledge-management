@@ -10,7 +10,11 @@ export interface CapabilityCounts {
   realisations: number;
 }
 
-/** A capability in the hierarchy tree (recursive). */
+/**
+ * A capability in the hierarchy tree (recursive). `children` is **optional**: a fixed-depth
+ * GraphQL selection can't express arbitrary depth, so nodes at the fetch boundary come back
+ * without it — `descendantCount` still reflects the full (possibly deeper) subtree.
+ */
 export interface CapabilityNode {
   id: string;
   name: string;
@@ -18,7 +22,7 @@ export interface CapabilityNode {
   orphaned: boolean;
   descendantCount: number;
   counts: CapabilityCounts;
-  children: CapabilityNode[];
+  children?: CapabilityNode[];
 }
 
 /** The Capability Map projection (mirrors `@dkm/view-projection`'s `CapabilityMapView`). */

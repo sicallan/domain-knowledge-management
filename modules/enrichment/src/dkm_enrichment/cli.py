@@ -20,6 +20,10 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from dkm_enrichment.architecture_classification import (
+    BUSINESS_CAPABILITY_TYPE,
+    classify_architecture,
+)
 from dkm_enrichment.emission import JsonlWriter
 from dkm_enrichment.entity_resolution import dedupe_relationships, entity_name
 from dkm_enrichment.gateway import FakeGateway, LLMGateway, LLMGatewayError
@@ -144,6 +148,27 @@ def _read_entries(path: Path) -> list[JsonlEntry]:
     ]
 
 
+def _read_spine(path: Path) -> list[JsonlEntry]:
+    """Read the curated reference spine, tolerating its hand-authored provenance.
+
+    The spine is authored reference data, not source-extracted evidence, so its ``source`` omits
+    the ``sourceAuthority`` that ``SourceProvenance`` otherwise requires (the classification pass
+    reads only a spine node's ``type`` + ``data``, never its provenance). Default the missing field
+    so the same node loads here as it does through the TS ``GraphLoader``.
+    """
+    entries: list[JsonlEntry] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        raw = json.loads(stripped)
+        source = raw.get("source")
+        if isinstance(source, dict):
+            source.setdefault("sourceAuthority", "operational")
+        entries.append(JsonlEntry.model_validate(raw))
+    return entries
+
+
 async def _run_normalise(args: argparse.Namespace) -> int:
     """LLM-adjudicated normalisation: merge same-concept entities in a domain's JSONL in place."""
     out = Path(args.dir)
@@ -238,6 +263,81 @@ def _normalisation_report(
     }
 
 
+_REFERENCE_CAPABILITY_TYPE = "ReferenceCapability"
+
+
+async def _run_classify_architecture(args: argparse.Namespace) -> int:
+    """Business-Architecture pass: classify raw capabilities into the curated spine (ADR-0009)."""
+    out = Path(args.dir)
+    extractions_path = out / "extractions.jsonl"
+    spine_path = Path(args.spine)
+    classifications_path = out / "classifications.jsonl"
+
+    if not extractions_path.exists():
+        print(f"✗ no extractions.jsonl in {out} — run `extract` first.", file=sys.stderr)
+        return 1
+    if not spine_path.exists():
+        print(
+            f"✗ reference spine not found: {spine_path} "
+            "(the curated ReferenceCapability JSONL, e.g. demo/business-architecture-spine.jsonl).",
+            file=sys.stderr,
+        )
+        return 1
+
+    entries = _read_entries(extractions_path)
+    capabilities = [e for e in entries if e.type == BUSINESS_CAPABILITY_TYPE]
+    spine = [e for e in _read_spine(spine_path) if e.type == _REFERENCE_CAPABILITY_TYPE]
+    if not spine:
+        print(f"✗ no ReferenceCapability nodes in spine: {spine_path}", file=sys.stderr)
+        return 1
+
+    # Incremental: keep classifications whose subject still exists; re-classify only the remainder.
+    existing = _read_entries(classifications_path)
+    live_ids = {c.id for c in capabilities}
+    kept = [e for e in existing if str(e.data.get("subject")) in live_ids]
+    already_classified = {str(e.data.get("subject")) for e in kept}
+
+    pending = len(capabilities) - len(already_classified)
+    print(
+        f"▶ Classifying {pending} of {len(capabilities)} capabilit(y/ies) into "
+        f"{len(spine)} reference node(s) ({len(already_classified)} already classified) in {out}…"
+    )
+
+    try:
+        gateway = build_gateway(fake=args.fake)
+        new_entries = await classify_architecture(
+            gateway,
+            capabilities,
+            spine,
+            options=LLMOptions(model=args.model),
+            already_classified=already_classified,
+            batch_size=args.batch_size,
+        )
+    except LLMGatewayError as exc:
+        print(f"✗ {exc}", file=sys.stderr)
+        print(
+            f"  Your extracted graph in {out} is untouched; resolve the issue above and re-run, "
+            "or pass --fake to exercise the pipeline without the LLM.",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Union of kept + freshly-classified, stable-sorted by id so the artifact is deterministic.
+    merged = sorted([*kept, *new_entries], key=lambda e: e.id)
+    with JsonlWriter(classifications_path) as writer:
+        for entry in merged:
+            writer.write(entry)
+
+    placed = sum(1 for e in merged if e.data.get("disposition") == "placed")
+    rejected = sum(1 for e in merged if e.data.get("disposition") == "rejected")
+    unclassified = len(capabilities) - len(merged)
+    print(
+        f"✓ classified {len(new_entries)} new; {placed} placed, {rejected} rejected, "
+        f"{unclassified} unclassified → {classifications_path}"
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="dkm_enrichment", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -277,6 +377,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="Token-set similarity (0-1) to treat two names as merge candidates (default 0.67; "
         "lower = more aggressive clustering).",
     )
+
+    classify = sub.add_parser(
+        "classify-architecture",
+        help="Classify raw capabilities into the curated Business-Architecture spine (ADR-0009).",
+    )
+    classify.add_argument("dir", help="Domain output dir holding extractions.jsonl.")
+    classify.add_argument(
+        "--spine",
+        required=True,
+        help="Curated ReferenceCapability JSONL (e.g. demo/business-architecture-spine.jsonl).",
+    )
+    classify.add_argument(
+        "--fake",
+        action="store_true",
+        help="Use the deterministic fake gateway (no LLM / key) — for CI and plumbing checks.",
+    )
+    classify.add_argument(
+        "--model", default="claude-sonnet-4-6", help="LLM model for classification."
+    )
+    classify.add_argument(
+        "--batch-size",
+        type=int,
+        default=40,
+        help="Raw capabilities per LLM call (the spine rides every call; default 40).",
+    )
     return parser
 
 
@@ -286,4 +411,6 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_run_extract(args))
     if args.command == "normalise":
         return asyncio.run(_run_normalise(args))
+    if args.command == "classify-architecture":
+        return asyncio.run(_run_classify_architecture(args))
     return 1  # pragma: no cover — argparse enforces a known subcommand

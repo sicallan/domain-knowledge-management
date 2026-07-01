@@ -32,6 +32,18 @@ All model access goes through a thin, provider-agnostic **`LLMGateway`** port
 ([D-P1.1](../../docs/phase-1/decisions.md)) — the only Claude-aware code in the system. Default
 model `claude-sonnet-4-6`; low-confidence items escalate to `claude-opus-4-8` on re-run.
 
+### Post-extraction passes (CLI subcommands over a domain's JSONL)
+
+- `extract <docs.jsonl> --out <dir>` — the pipeline above.
+- `normalise <dir>` — LLM-adjudicated dedup: merge same-concept entities in place (issue #76).
+- `classify-architecture <dir> --spine <ref-capabilities.jsonl>` — the **Business-Architecture
+  pass** ([ADR-0009](../../docs/adr/0009-business-architecture-classification.md)): classify each
+  raw `BusinessCapability` into the curated `ReferenceCapability` spine (placed under a reference
+  node at an assigned tree level, or rejected with a reason) and emit one `CapabilityClassification`
+  per capability to `classifications.jsonl`. Deterministic ids make it idempotent; already-classified
+  subjects are skipped, so a re-run only classifies newly-ingested capabilities. The
+  `BusinessArchitectureProjector` projects the EA tree over (spine + these classifications).
+
 ## Install & test
 
 ```bash

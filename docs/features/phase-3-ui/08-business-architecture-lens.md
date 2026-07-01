@@ -204,12 +204,12 @@ New/changed files (indicative):
 
 ## 9. Task breakdown
 
-1. [ ] Schemas + validation tests (test-first): `ReferenceCapability`, `CapabilityClassification`.
-2. [ ] Curated reference-spine seed JSONL (L1 + L2) transcribed from the exemplar; loader/seed wiring.
-3. [ ] Classification pass in `modules/enrichment` (prompt, gateway call, emission), fake-gateway golden
+1. [x] Schemas + validation tests (test-first): `ReferenceCapability`, `CapabilityClassification`.
+2. [x] Curated reference-spine seed JSONL (L1 + L2) transcribed from the exemplar; loader/seed wiring.
+3. [x] Classification pass in `modules/enrichment` (prompt, gateway call, emission), fake-gateway golden
    fixture, idempotent/incremental; `dkm classify-architecture` CLI wiring; env-gated real eval.
-4. [ ] `business-architecture-projector.ts` (+ types/index/tests) — assemble from spine + classifications.
-5. [ ] Gateway `businessArchitecture` query/resolver + seed registration + SDL snapshot + resolver test.
+4. [x] `business-architecture-projector.ts` (+ types/index/tests) — assemble from spine + classifications.
+5. [x] Gateway `businessArchitecture` query/resolver + seed registration + SDL snapshot + resolver test.
 6. [ ] UI lens toggle on the Capability Map screen (Raw ↔ EA); EA query/hook; node detail + bucket
    counts; MSW fixture; component/a11y tests.
 7. [ ] Run the pass on the **stewardship corpus**; review the classification JSONL; QA the toggle.

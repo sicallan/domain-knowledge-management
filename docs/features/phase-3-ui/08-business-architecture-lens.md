@@ -210,7 +210,7 @@ New/changed files (indicative):
    fixture, idempotent/incremental; `dkm classify-architecture` CLI wiring; env-gated real eval.
 4. [x] `business-architecture-projector.ts` (+ types/index/tests) — assemble from spine + classifications.
 5. [x] Gateway `businessArchitecture` query/resolver + seed registration + SDL snapshot + resolver test.
-6. [ ] UI lens toggle on the Capability Map screen (Raw ↔ EA); EA query/hook; node detail + bucket
+6. [x] UI lens toggle on the Capability Map screen (Raw ↔ EA); EA query/hook; node detail + bucket
    counts; MSW fixture; component/a11y tests.
 7. [ ] Run the pass on the **stewardship corpus**; review the classification JSONL; QA the toggle.
 

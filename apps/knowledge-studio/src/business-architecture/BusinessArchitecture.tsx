@@ -1,8 +1,13 @@
+import { BlockDiagram, type BlockNode } from "../components/BlockDiagram";
 import type { CapabilityCounts } from "../capability-map/useCapabilityMap";
 import type { BusinessArchitectureNode, BusinessArchitectureView } from "./useBusinessArchitecture";
 
+/** How the EA tree is drawn: an indented outline, or a nested containment block diagram. */
+export type BusinessArchitectureMode = "outline" | "block";
+
 export interface BusinessArchitectureProps {
   view: BusinessArchitectureView;
+  mode?: BusinessArchitectureMode;
 }
 
 /** 1 domain · 2 capability · 3 function · 4 activity — the disposition, always conveyed in words. */
@@ -21,15 +26,40 @@ const COUNT_LABELS: [keyof CapabilityCounts, string][] = [
   ["realisations", "realisation"],
 ];
 
+function countBadges(counts?: CapabilityCounts | null): string[] {
+  if (!counts) return [];
+  return COUNT_LABELS.filter(([key]) => counts[key] > 0).map(
+    ([key, noun]) => `${counts[key]} ${noun}${counts[key] === 1 ? "" : "s"}`,
+  );
+}
+
 function countSummary(counts?: CapabilityCounts | null): string {
-  if (!counts) return "";
-  return COUNT_LABELS.filter(([key]) => counts[key] > 0)
-    .map(([key, noun]) => `${counts[key]} ${noun}${counts[key] === 1 ? "" : "s"}`)
-    .join(" · ");
+  return countBadges(counts).join(" · ");
 }
 
 function levelLabel(level: number): string {
   return LEVEL_LABELS[level] ?? `level ${level}`;
+}
+
+/** Map an EA node onto the generic {@link BlockNode}: classified nodes carry a confidence heat + ring. */
+function toBlockNode(node: BusinessArchitectureNode): BlockNode {
+  const classified = node.origin === "classified";
+  const confidence = typeof node.confidence === "number" ? node.confidence : null;
+  const meta = [
+    levelLabel(node.level),
+    classified && confidence !== null ? `${Math.round(confidence * 100)}%` : node.framework,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return {
+    id: node.id,
+    label: node.name,
+    meta: meta || undefined,
+    badges: classified ? countBadges(node.counts) : [],
+    heat: classified ? confidence : null,
+    accent: classified,
+    children: node.children?.map(toBlockNode),
+  };
 }
 
 function BusinessArchitectureTreeNode({ node }: { node: BusinessArchitectureNode }) {
@@ -79,15 +109,23 @@ function BusinessArchitectureTreeNode({ node }: { node: BusinessArchitectureNode
  * rationale and confidence. Below the tree, the **rejected** and **unclassified** buckets are
  * surfaced honestly (with counts) rather than silently dropped. Pure — renders the view it is given.
  */
-export function BusinessArchitecture({ view }: BusinessArchitectureProps) {
+export function BusinessArchitecture({ view, mode = "outline" }: BusinessArchitectureProps) {
   const { domains, rejected, unclassified } = view;
   return (
     <div className="flex flex-col gap-5">
-      <ul aria-label="Business-architecture model" className="flex flex-col gap-1">
-        {domains.map((domain) => (
-          <BusinessArchitectureTreeNode key={domain.id} node={domain} />
-        ))}
-      </ul>
+      {mode === "block" ? (
+        <BlockDiagram
+          nodes={domains.map(toBlockNode)}
+          ariaLabel="Business-architecture block diagram"
+          initialDepth={3}
+        />
+      ) : (
+        <ul aria-label="Business-architecture model" className="flex flex-col gap-1">
+          {domains.map((domain) => (
+            <BusinessArchitectureTreeNode key={domain.id} node={domain} />
+          ))}
+        </ul>
+      )}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:gap-8">
         <section

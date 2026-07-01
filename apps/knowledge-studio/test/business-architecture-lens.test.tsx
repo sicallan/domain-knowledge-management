@@ -83,6 +83,33 @@ describe("CapabilityMapScreen — Business-Architecture lens", () => {
     expect(unclassified).toHaveTextContent(/Risk & Compliance/);
   });
 
+  it("switches the EA lens between the outline and the block diagram", async () => {
+    renderScreen();
+    await switchToEA();
+    // Defaults to the outline; the block diagram is not yet mounted.
+    expect(screen.queryByRole("list", { name: "Business-architecture block diagram" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /block diagram/i }));
+    const blocks = screen.getByRole("list", { name: "Business-architecture block diagram" });
+    // The same classified capability shows as a tile, with its level + confidence as meta.
+    const authorisation = within(blocks).getByText("Authorisation").closest("li");
+    expect(authorisation).toHaveTextContent(/function/i);
+    expect(authorisation).toHaveTextContent(/86%/);
+    // The buckets stay visible regardless of diagram style.
+    expect(screen.getByRole("group", { name: /rejected/i })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /outline/i }));
+    expect(eaTree()).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Business-architecture block diagram" })).not.toBeInTheDocument();
+  });
+
+  it("passes an axe accessibility baseline on the EA block diagram", async () => {
+    const { container } = renderScreen();
+    await switchToEA();
+    await userEvent.click(screen.getByRole("button", { name: /block diagram/i }));
+    expect(await axe(container, AXE_OPTIONS)).toHaveNoViolations();
+  });
+
   it("toggles back to the raw hierarchy", async () => {
     renderScreen();
     await switchToEA();

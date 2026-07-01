@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { BusinessArchitecture } from "../business-architecture/BusinessArchitecture";
+import {
+  BusinessArchitecture,
+  type BusinessArchitectureMode,
+} from "../business-architecture/BusinessArchitecture";
 import { useBusinessArchitecture } from "../business-architecture/useBusinessArchitecture";
 import { CapabilityMap } from "../capability-map/CapabilityMap";
 import { useCapabilityMap } from "../capability-map/useCapabilityMap";
@@ -148,8 +151,32 @@ interface EaLensProps {
 }
 
 function EaLens({ view, loading, error, empty }: EaLensProps) {
+  const [mode, setMode] = useState<BusinessArchitectureMode>("outline");
   return (
     <>
+      {view && !empty && (
+        <div role="group" aria-label="Diagram style" className="flex w-fit gap-1 text-sm">
+          {(
+            [
+              ["outline", "Outline"],
+              ["block", "Block diagram"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={mode === value}
+              onClick={() => setMode(value)}
+              className={`rounded-md border border-border px-2 py-1 ${
+                mode === value ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading && !view && (
         <p role="status" className="text-sm text-muted-foreground">
           Loading the business-architecture model…
@@ -166,7 +193,7 @@ function EaLens({ view, loading, error, empty }: EaLensProps) {
           the extracted capabilities into the reference spine, then this model fills in.
         </p>
       )}
-      {view && !empty && <BusinessArchitecture view={view} />}
+      {view && !empty && <BusinessArchitecture view={view} mode={mode} />}
     </>
   );
 }

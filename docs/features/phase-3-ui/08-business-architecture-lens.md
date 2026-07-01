@@ -212,7 +212,10 @@ New/changed files (indicative):
 5. [x] Gateway `businessArchitecture` query/resolver + seed registration + SDL snapshot + resolver test.
 6. [x] UI lens toggle on the Capability Map screen (Raw ↔ EA); EA query/hook; node detail + bucket
    counts; MSW fixture; component/a11y tests.
-7. [ ] Run the pass on the **stewardship corpus**; review the classification JSONL; QA the toggle.
+7. [x] Run the pass on the **stewardship corpus**; review the classification JSONL; QA the toggle.
+   *(605 raw capabilities → 556 placed, 49 rejected, 0 unclassified; the EA lens serves 11 domains
+   with 584 nodes over `DKM_DOMAIN=stewardship`. Placements sensible; rejections principled —
+   brand/programme names, policy/committee reviews, duplicates, non-capabilities.)*
 
 ## 10. OCP extension points
 

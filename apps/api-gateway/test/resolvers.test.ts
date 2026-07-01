@@ -1,5 +1,7 @@
 import { type ExecutionResult, graphql } from "graphql";
 import type { QueryContext, QueryService } from "@dkm/query";
+import { BusinessArchitectureProjector } from "@dkm/view-projection";
+import type { BusinessArchitectureView } from "@dkm/view-projection";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createGraphQLContext, devQueryContext } from "../src/context";
 import { schema } from "../src/schema";
@@ -170,6 +172,76 @@ describe("View Projection resolvers", () => {
       `{ capabilityMap(root: "Risk & Compliance") { roots { name children { name } } } }`,
     );
     expect(scoped.capabilityMap.roots.map((r) => r.name)).toEqual(["Risk & Compliance"]);
+  });
+
+  it("businessArchitecture returns the normalised EA tree matching the projector", async () => {
+    type BANode = {
+      id: string;
+      name: string;
+      level: number;
+      origin: string;
+      confidence: number | null;
+      rationale: string | null;
+      descendantCount: number;
+      children: BANode[];
+    };
+    type BAView = {
+      domains: BANode[];
+      rejected: { count: number; byReason: { reason: string; count: number }[] };
+      unclassified: { count: number; names: string[] };
+    };
+    const { businessArchitecture } = await run<{ businessArchitecture: BAView }>(
+      `{ businessArchitecture {
+          domains { id name level origin descendantCount
+            children { id name level origin confidence rationale
+              children { id name level origin confidence rationale
+                children { id name level origin } } } }
+          rejected { count byReason { reason count } }
+          unclassified { count names }
+        } }`,
+    );
+
+    // The resolver is the projector: same seed, same output (spine + demo stub classifications).
+    const direct: BusinessArchitectureView = await new BusinessArchitectureProjector(
+      backend.queryService,
+    ).project({}, devQueryContext());
+
+    // The 11 curated spine domains always show, in the projector's order.
+    expect(businessArchitecture.domains.map((d) => d.name)).toEqual(direct.domains.map((d) => d.name));
+    expect(businessArchitecture.domains).toHaveLength(11);
+
+    // The demo classification stub: placements render beneath the curated capabilities.
+    const flat = new Map<string, BANode>();
+    const walk = (n: BANode) => {
+      flat.set(n.name, n);
+      (n.children ?? []).forEach(walk);
+    };
+    businessArchitecture.domains.forEach(walk);
+    const authorisation = flat.get("Authorisation");
+    expect(authorisation?.origin).toBe("classified");
+    expect(authorisation?.level).toBe(3);
+    expect(typeof authorisation?.rationale).toBe("string");
+    // Classified-under-classified: an L4 activity nests beneath a placed L3 capability.
+    expect(flat.get("Settlement")?.children.map((c) => c.name)).toContain("Refunds");
+    expect(flat.get("Refunds")?.level).toBe(4);
+
+    // Rejected + unclassified buckets match the projector and surface the stub's data.
+    expect(businessArchitecture.rejected).toEqual(direct.rejected);
+    expect(businessArchitecture.unclassified).toEqual(direct.unclassified);
+    expect(businessArchitecture.rejected.count).toBeGreaterThanOrEqual(1);
+    expect(businessArchitecture.unclassified.names).toContain("Risk & Compliance");
+  });
+
+  it("businessArchitecture honours minConfidence, dropping low-confidence placements", async () => {
+    const { businessArchitecture } = await run<{
+      businessArchitecture: { unclassified: { count: number } };
+    }>(`{ businessArchitecture(minConfidence: 1.1) { unclassified { count } } }`);
+    const direct = await new BusinessArchitectureProjector(backend.queryService).project(
+      { minConfidence: 1.1 },
+      devQueryContext(),
+    );
+    // Nothing clears an impossible threshold ⇒ every classified subject falls to unclassified.
+    expect(businessArchitecture.unclassified.count).toBe(direct.unclassified.count);
   });
 
   it("coverageMap returns the matrix shape with a summary (criterion 5)", async () => {

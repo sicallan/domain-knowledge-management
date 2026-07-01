@@ -6,6 +6,10 @@ import type {
   BehaviourFlowStep,
   BehaviourFlowTransition,
   BehaviourFlowView,
+  BusinessArchitectureNode,
+  BusinessArchitectureRejections,
+  BusinessArchitectureUnclassified,
+  BusinessArchitectureView,
   CapabilityCounts,
   CapabilityMapView,
   CapabilityNode,
@@ -117,6 +121,75 @@ const CapabilityMapViewRef = builder.objectRef<CapabilityMapView>("CapabilityMap
     roots: t.field({ type: [CapabilityNodeRef], resolve: (v) => v.roots }),
   }),
 });
+
+// --- Business-Architecture Lens (Feature 08, #86 — ADR-0009) ---------------
+// The normalised EA tree: curated ReferenceCapability spine (L1 domain → L2 capability)
+// with raw capabilities classified beneath it as L3/L4, plus rejected/unclassified buckets.
+
+// Recursive: declare the ref, then implement so `children` can reference itself.
+const BusinessArchitectureNodeRef =
+  builder.objectRef<BusinessArchitectureNode>("BusinessArchitectureNode");
+BusinessArchitectureNodeRef.implement({
+  fields: (t) => ({
+    id: t.exposeID("id"),
+    name: t.exposeString("name"),
+    level: t.exposeInt("level"),
+    // "reference" (curated spine) | "classified" (a placed raw capability).
+    origin: t.exposeString("origin"),
+    // Reference (spine) nodes only.
+    framework: t.exposeString("framework", { nullable: true }),
+    // Classified nodes only: the classifier's certainty and justification.
+    confidence: t.exposeFloat("confidence", { nullable: true }),
+    rationale: t.exposeString("rationale", { nullable: true }),
+    // Classified nodes only: evidence attached to the underlying raw capability.
+    counts: t.field({ type: CapabilityCountsRef, nullable: true, resolve: (n) => n.counts ?? null }),
+    descendantCount: t.exposeInt("descendantCount"),
+    children: t.field({ type: [BusinessArchitectureNodeRef], resolve: (n) => n.children }),
+  }),
+});
+
+const BusinessArchitectureRejectionReasonRef = builder
+  .objectRef<{ reason: string; count: number }>("BusinessArchitectureRejectionReason")
+  .implement({
+    fields: (t) => ({
+      reason: t.exposeString("reason"),
+      count: t.exposeInt("count"),
+    }),
+  });
+
+const BusinessArchitectureRejectionsRef = builder
+  .objectRef<BusinessArchitectureRejections>("BusinessArchitectureRejections")
+  .implement({
+    fields: (t) => ({
+      count: t.exposeInt("count"),
+      byReason: t.field({
+        type: [BusinessArchitectureRejectionReasonRef],
+        resolve: (r) => r.byReason,
+      }),
+    }),
+  });
+
+const BusinessArchitectureUnclassifiedRef = builder
+  .objectRef<BusinessArchitectureUnclassified>("BusinessArchitectureUnclassified")
+  .implement({
+    fields: (t) => ({
+      count: t.exposeInt("count"),
+      names: t.exposeStringList("names"),
+    }),
+  });
+
+const BusinessArchitectureViewRef = builder
+  .objectRef<BusinessArchitectureView>("BusinessArchitectureView")
+  .implement({
+    fields: (t) => ({
+      domains: t.field({ type: [BusinessArchitectureNodeRef], resolve: (v) => v.domains }),
+      rejected: t.field({ type: BusinessArchitectureRejectionsRef, resolve: (v) => v.rejected }),
+      unclassified: t.field({
+        type: BusinessArchitectureUnclassifiedRef,
+        resolve: (v) => v.unclassified,
+      }),
+    }),
+  });
 
 // --- Vendor Coverage Map ---------------------------------------------------
 
@@ -312,6 +385,20 @@ builder.queryFields((t) => ({
       const result = await ctx.views.getView<CapabilityMapView>(
         "capability-map",
         { root: args.root ?? undefined, depth: args.depth ?? undefined },
+        ctx.context,
+      );
+      return result.data;
+    },
+  }),
+  businessArchitecture: t.field({
+    type: BusinessArchitectureViewRef,
+    description:
+      "The normalised Business-Architecture Lens: the curated reference spine (L1 domain → L2 capability) with raw capabilities classified beneath it as L3/L4, plus rejected/unclassified buckets.",
+    args: { root: t.arg.string(), minConfidence: t.arg.float() },
+    resolve: async (_root, args, ctx) => {
+      const result = await ctx.views.getView<BusinessArchitectureView>(
+        "business-architecture",
+        { root: args.root ?? undefined, minConfidence: args.minConfidence ?? undefined },
         ctx.context,
       );
       return result.data;

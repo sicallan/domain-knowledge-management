@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/reference-capability.schema.json",
+  "title": "ReferenceCapability",
+  "description": "L1 — A curated reference business capability: the hand-authored, versioned spine of the business-architecture model (level 1 = enterprise domain, level 2 = capability), grounded in a reference framework (BIZBOK / APQC / TOGAF). Distinct from the extracted BusinessCapability: this is authored reference structure, not source-evidenced assertion. Raw capabilities are mapped into it via CapabilityClassification; the Business-Architecture Lens projects the tree over both (ADR-0009).",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["name", "level", "framework"],
+  "properties": {
+    "type": { "const": "ReferenceCapability" },
+    "name": { "type": "string", "minLength": 1 },
+    "level": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2,
+      "description": "Curated spine level: 1 = enterprise domain, 2 = capability. The spine is L1+L2 only; L3 functions and L4 activities are classified raw capabilities, not reference nodes."
+    },
+    "parent": {
+      "type": "string",
+      "description": "Parent ReferenceCapability (name or id); an L2 capability references its L1 domain. Absent for L1 domains."
+    },
+    "framework": {
+      "type": "string",
+      "enum": ["BIZBOK", "APQC", "TOGAF", "custom"],
+      "description": "Reference framework this curated node derives from (its provenance)."
+    },
+    "description": { "type": "string" }
+  }
+}

@@ -28,7 +28,7 @@ async function assertDomainMapOverLoadedGraph(graph: GraphPort): Promise<void> {
   await loader.initialize({});
   const load = await loader.load(concatJsonl([EXTRACTIONS, RELATIONSHIPS]), "demo-payments");
   expect(load.failed).toBe(0);
-  expect(load.loaded).toBe(85); // 35 inventory entries + 50 relationships (incl. the Phase 2 behaviour layer)
+  expect(load.loaded).toBe(93); // 40 inventory entries + 53 relationships (incl. the Phase 2 behaviour layer + the #84 capability hierarchy)
 
   const service = new GraphQueryService(graph);
   const engine = new DefaultViewEngine(service);

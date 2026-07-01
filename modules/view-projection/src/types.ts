@@ -151,6 +151,49 @@ export interface DomainMapView {
 }
 
 // ---------------------------------------------------------------------------
+// Capability Map view (issue #84). The EA business-function lens: the extracted
+// BusinessCapability hierarchy (level / parentCapability) surfaced as a tree, each
+// node carrying counts of the evidence attached to it. A pure read-time projection
+// of already-extracted structure — no new assertions (see ADR-0008). Additive only.
+// ---------------------------------------------------------------------------
+
+/** Parameters accepted by the Capability Map projector. */
+export interface CapabilityMapParams {
+  /** Restrict to one root capability's subtree (by id or name). Omitted → every root. */
+  root?: string;
+  /** Reserved traversal depth knob. Unused in the first cut (the full tree is returned). */
+  depth?: number;
+}
+
+/** Per-capability counts of the evidence attached to it (one hop, by neighbour type). */
+export interface CapabilityCounts {
+  rules: number;
+  invariants: number;
+  decisions: number;
+  concepts: number;
+  realisations: number;
+}
+
+/** A capability as it appears in the hierarchy tree (recursive). */
+export interface CapabilityNode {
+  id: string;
+  name: string;
+  /** The extracted `level` (1/2/3…), retained for reference; depth comes from the tree. */
+  level: number | null;
+  /** True when a `parentCapability` was declared but could not be resolved (surfaced as a root). */
+  orphaned: boolean;
+  counts: CapabilityCounts;
+  /** Size of this node's subtree (excluding itself). */
+  descendantCount: number;
+  children: CapabilityNode[];
+}
+
+/** The Capability Map view output: the forest of capability roots. */
+export interface CapabilityMapView {
+  roots: CapabilityNode[];
+}
+
+// ---------------------------------------------------------------------------
 // Behaviour Flow view (feature 04 §7). Spec 007 lists the Behaviour Flow view
 // but leaves its output schema to the implementing feature, mirroring the Domain
 // Map precedent. Additive only — fields may grow but never change (spec 007 Open

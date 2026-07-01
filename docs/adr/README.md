@@ -16,3 +16,4 @@ Format: `NNNN-short-title.md`. Status one of: *Proposed*, *Accepted*, *Accepted 
 | [0005](./0005-graph-visualisation-library.md) | Graph visualisation library (Cytoscape.js) | Accepted |
 | [0006](./0006-graphql-server-framework.md) | GraphQL server framework (GraphQL Yoga + Pothos) | Accepted |
 | [0007](./0007-component-library.md) | Component library / design system (shadcn/ui + Radix + Tailwind) | Accepted |
+| [0008](./0008-projection-first-vs-synthesis.md) | Projection-first: derive views, materialise new knowledge only at three triggers | Accepted |

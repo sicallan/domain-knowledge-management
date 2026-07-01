@@ -151,6 +151,27 @@ describe("View Projection resolvers", () => {
     expect(domainMap.subdomains.length).toBeGreaterThan(0);
   });
 
+  it("capabilityMap returns the seeded business-function hierarchy with counts", async () => {
+    type Node = { id: string; name: string; level: number | null; descendantCount: number; counts: { rules: number; realisations: number }; children: Node[] };
+    const { capabilityMap } = await run<{ capabilityMap: { roots: Node[] } }>(
+      `{ capabilityMap { roots { id name level descendantCount counts { rules realisations } children { name counts { rules } } } } }`,
+    );
+    const rootNames = capabilityMap.roots.map((r) => r.name);
+    expect(rootNames).toEqual(expect.arrayContaining(["Payments Processing", "Risk & Compliance"]));
+
+    const payments = capabilityMap.roots.find((r) => r.name === "Payments Processing")!;
+    expect(payments.children.map((c) => c.name).sort()).toEqual(["Authorisation", "Refunds", "Settlement"]);
+    // Authorisation carries the seeded evidence (1 governing rule + 1 realising flow).
+    const auth = payments.children.find((c) => c.name === "Authorisation")!;
+    expect(auth.counts.rules).toBe(1);
+
+    // root scoping narrows to one subtree.
+    const scoped = await run<{ capabilityMap: { roots: { name: string }[] } }>(
+      `{ capabilityMap(root: "Risk & Compliance") { roots { name children { name } } } }`,
+    );
+    expect(scoped.capabilityMap.roots.map((r) => r.name)).toEqual(["Risk & Compliance"]);
+  });
+
   it("coverageMap returns the matrix shape with a summary (criterion 5)", async () => {
     const { coverageMap } = await run<{
       coverageMap: { rows: unknown[]; summary: { totalCapabilities: number; coveragePercentage: number } };

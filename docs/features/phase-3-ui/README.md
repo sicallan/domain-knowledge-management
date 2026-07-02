@@ -35,14 +35,16 @@ contradict them.
 | [05](05-explorer-list-table.md) | Knowledge Explorer — list/table mode | UI-3.5 | gateway → `listEntries` | Tabular view of the same data: sort, group, faceted filters (layer, type, lifecycle, owner, confidence, date); toggles with the canvas. The accessible fallback for the graph. |
 | [06](06-context-panel.md) | Context panel | UI-3.6 | gateway → `getEntry`/`traverse` | Slide-out detail panel: full entry detail + relationships + evidence/provenance on selection, from anywhere (canvas, list, search). Closes the explore→inspect loop. |
 | [07](07-domain-map-screen.md) | Domain Map screen | §Views (step 1.5) | gateway → `domainMap` | Data-driven L1 view of the *actual ingested* domain: subdomains → bounded-context cards (concept/service counts) → cross-context relationships. Replaces the stale `/views/domain-map` placeholder. |
+| [08](08-business-architecture-lens.md) | Business-Architecture lens | §Views (ADR-0009) | gateway → `businessArchitecture` | A second lens on the Capability Map: raw capabilities classified into a curated BIZBOK/APQC reference spine (domain → capability → function/activity), with rejected/unclassified buckets. Outline↔Block toggle. |
+| [09](09-coverage-map-screen.md) | Vendor Coverage Map screen | §Views (step 3.3) | gateway → `coverageMap` | L2 build-vs-buy matrix: L1 capabilities (rows) × vendor products (columns), RAG cells + per-row roll-up + weighted summary. Replaces the stale `/views/coverage` placeholder. Gap Analysis (10) is the sibling inverse. |
 
 > **View screens (07+).** The data-track projections (Domain Map, Coverage Map, Gap Analysis) ship as
-> GraphQL queries, but beyond the Explorer they still need **presentation screens** — today their
-> routes are `ViewPlaceholder`s with stale "delivered in UI-3.x" copy. Feature 07 (Domain Map) is the
-> first; Coverage Map / Gap Analysis are anticipated follow-ups (08/09) on the same pattern. These add
-> **no backend** — the projectors and resolvers already exist. Note the deliberate split: the
-> **Overview** screen (#78) shows the *conceptual model* (how the tool sees the world, no data); the
-> **Domain Map** shows the *actual ingested* domain.
+> GraphQL queries, but beyond the Explorer they still need **presentation screens** — their routes
+> were `ViewPlaceholder`s with stale "delivered in UI-3.x" copy. Feature 07 (Domain Map) was the
+> first; Feature 09 (Coverage Map) followed; **Gap Analysis** is the remaining sibling (anticipated
+> Feature 10) on the same pattern. These add **no backend** — the projectors and resolvers already
+> exist. Note the deliberate split: the **Overview** screen (#78) shows the *conceptual model* (how the
+> tool sees the world, no data); the **Domain Map** shows the *actual ingested* domain.
 
 ## Build order
 

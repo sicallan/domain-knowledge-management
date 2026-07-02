@@ -26,9 +26,11 @@ describe("routing (criterion 2)", () => {
     expect(screen.getByRole("heading", { name: "Capability Map", level: 1 })).toBeInTheDocument();
   });
 
-  it("resolves a still-placeholder view route (Coverage Map)", () => {
+  it("resolves /views/coverage to the real Coverage Map screen", () => {
     renderWithProviders(<AppRoutes />, { route: "/views/coverage" });
-    expect(screen.getByRole("heading", { name: "Coverage Map" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Coverage Map", level: 1 })).toBeInTheDocument();
+    // The stale placeholder is gone.
+    expect(screen.queryByText(/This view is delivered/)).not.toBeInTheDocument();
   });
 
   it("renders the 404 screen for an unknown route", () => {

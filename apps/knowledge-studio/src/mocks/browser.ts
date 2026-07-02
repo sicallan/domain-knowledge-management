@@ -123,6 +123,35 @@ const STANDALONE_FIXTURE: Record<string, unknown> = {
     rejected: { count: 1, byReason: [{ reason: "duplicate", count: 1 }] },
     unclassified: { count: 1, names: ["Risk & Compliance"] },
   },
+  // The Vendor Coverage Map (Phase-3 view): the illustrative Payments L2 scenario the live gateway
+  // seed lacks (VendorProduct/mappings live only in the in-code demo) — 5 capabilities × Adyen/Stripe,
+  // mirroring demo/payments-coverage-map.md, so standalone dev shows a populated matrix.
+  coverageMap: {
+    columns: [
+      { id: "vp-adyen", name: "Adyen Platform", vendor: "Adyen" },
+      { id: "vp-stripe", name: "Stripe Payments", vendor: "Stripe" },
+    ],
+    rows: [
+      { id: "cap-authorisation", name: "Card Authorisation", kind: "BusinessCapability", status: "covered", gap: false, domain: "payments" },
+      { id: "cap-fraud", name: "Fraud Detection", kind: "BusinessCapability", status: "partial", gap: false, domain: "payments" },
+      { id: "cap-payouts", name: "Payouts", kind: "BusinessCapability", status: "covered", gap: false, domain: "payments" },
+      { id: "cap-reporting", name: "Regulatory Reporting", kind: "BusinessCapability", status: "uncovered", gap: true, domain: "payments" },
+      { id: "cap-settlement", name: "Settlement", kind: "BusinessCapability", status: "covered", gap: false, domain: "payments" },
+    ],
+    cells: [
+      { rowId: "cap-authorisation", columnId: "vp-adyen", status: "covered", coveragePercentage: 100, gaps: null },
+      { rowId: "cap-authorisation", columnId: "vp-stripe", status: "covered", coveragePercentage: 100, gaps: null },
+      { rowId: "cap-fraud", columnId: "vp-adyen", status: "partial", coveragePercentage: 55, gaps: ["no behavioural scoring"] },
+      { rowId: "cap-fraud", columnId: "vp-stripe", status: "uncovered", coveragePercentage: null, gaps: null },
+      { rowId: "cap-payouts", columnId: "vp-adyen", status: "uncovered", coveragePercentage: null, gaps: null },
+      { rowId: "cap-payouts", columnId: "vp-stripe", status: "covered", coveragePercentage: 90, gaps: null },
+      { rowId: "cap-reporting", columnId: "vp-adyen", status: "uncovered", coveragePercentage: null, gaps: null },
+      { rowId: "cap-reporting", columnId: "vp-stripe", status: "uncovered", coveragePercentage: null, gaps: null },
+      { rowId: "cap-settlement", columnId: "vp-adyen", status: "covered", coveragePercentage: 100, gaps: null },
+      { rowId: "cap-settlement", columnId: "vp-stripe", status: "partial", coveragePercentage: 70, gaps: ["no T+0 settlement"] },
+    ],
+    summary: { totalCapabilities: 5, covered: 3, partial: 1, uncovered: 1, coveragePercentage: 70 },
+  },
 };
 
 interface BANode {

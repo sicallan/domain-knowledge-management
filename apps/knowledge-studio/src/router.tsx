@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./shell/AppLayout";
 import { CapabilityMapScreen } from "./screens/CapabilityMapScreen";
+import { CoverageMapScreen } from "./screens/CoverageMapScreen";
 import { DomainMapScreen } from "./screens/DomainMapScreen";
 import { ExplorerScreen } from "./screens/ExplorerScreen";
 import { NotFound } from "./screens/NotFound";
@@ -21,7 +22,7 @@ export function AppRoutes() {
         <Route path="explorer" element={<ExplorerScreen />} />
         <Route path="views/domain-map" element={<DomainMapScreen />} />
         <Route path="views/capability-map" element={<CapabilityMapScreen />} />
-        <Route path="views/coverage" element={<ViewPlaceholder title="Coverage Map" step="UI-3.5" />} />
+        <Route path="views/coverage" element={<CoverageMapScreen />} />
         <Route path="views/gap" element={<ViewPlaceholder title="Gap Analysis" step="UI-3.5" />} />
         <Route path="*" element={<NotFound />} />
       </Route>

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkm.dev/schemas/inventory/L1/capability-classification.schema.json",
+  "title": "CapabilityClassification",
+  "description": "L1 (derived) — Classifies one raw extracted BusinessCapability against the curated ReferenceCapability spine: either PLACED under a reference node at an assigned tree level (2 capability / 3 function / 4 activity), or REJECTED with a reason (generic mention, control, policy, duplicate, not-a-capability). The materialised, correctable judgment of the classification pass (ADR-0009, triggers #1+#2); the Business-Architecture Lens projects the tree over the spine + these. Reuses base-entry `confidence` for the classifier's certainty. Placement/rejection field conventions (assignedParent+assignedLevel when placed; rejectionReason when rejected) are enforced by the pass and projector, not the schema, so the first cut stays additive and simple.",
+  "type": "object",
+  "allOf": [{ "$ref": "https://dkm.dev/schemas/common/base-entry.schema.json" }],
+  "required": ["subject", "disposition", "rationale"],
+  "properties": {
+    "type": { "const": "CapabilityClassification" },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Id of the raw BusinessCapability being classified — its evidence and the node this classification is about."
+    },
+    "disposition": {
+      "type": "string",
+      "enum": ["placed", "rejected"],
+      "description": "placed = belongs in the EA tree under assignedParent; rejected = not a genuine capability (see rejectionReason)."
+    },
+    "assignedParent": {
+      "type": "string",
+      "description": "ReferenceCapability (name or id) under which the subject is placed. Present when disposition = placed."
+    },
+    "assignedLevel": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 4,
+      "description": "Level in the EA tree when placed: 2 = matches a curated capability, 3 = function, 4 = activity."
+    },
+    "rejectionReason": {
+      "type": "string",
+      "enum": ["generic-mention", "control", "policy", "duplicate", "not-a-capability"],
+      "description": "Why the subject is not a placed capability. Present when disposition = rejected."
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The classifier's justification for the disposition — always present."
+    }
+  }
+}

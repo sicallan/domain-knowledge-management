@@ -57,6 +57,40 @@ type BehaviourFlowView {
   steps: [BehaviourFlowStep!]!
 }
 
+type BusinessArchitectureNode {
+  children: [BusinessArchitectureNode!]!
+  confidence: Float
+  counts: CapabilityCounts
+  descendantCount: Int!
+  framework: String
+  id: ID!
+  level: Int!
+  name: String!
+  origin: String!
+  rationale: String
+}
+
+type BusinessArchitectureRejectionReason {
+  count: Int!
+  reason: String!
+}
+
+type BusinessArchitectureRejections {
+  byReason: [BusinessArchitectureRejectionReason!]!
+  count: Int!
+}
+
+type BusinessArchitectureUnclassified {
+  count: Int!
+  names: [String!]!
+}
+
+type BusinessArchitectureView {
+  domains: [BusinessArchitectureNode!]!
+  rejected: BusinessArchitectureRejections!
+  unclassified: BusinessArchitectureUnclassified!
+}
+
 type CapabilityCounts {
   concepts: Int!
   decisions: Int!
@@ -223,6 +257,11 @@ type Query {
   A single orchestration flow projected as ordered steps with decision points.
   """
   behaviourFlow(flowId: ID!): BehaviourFlowView!
+
+  """
+  The normalised Business-Architecture Lens: the curated reference spine (L1 domain → L2 capability) with raw capabilities classified beneath it as L3/L4, plus rejected/unclassified buckets.
+  """
+  businessArchitecture(minConfidence: Float, root: String): BusinessArchitectureView!
 
   """
   The BusinessCapability hierarchy (EA business-function map): roots → children, each with attached-evidence counts.

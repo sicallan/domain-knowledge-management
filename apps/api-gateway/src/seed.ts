@@ -9,6 +9,7 @@ import { GraphQueryService } from "@dkm/query";
 import type { QueryService } from "@dkm/query";
 import {
   BehaviourFlowProjector,
+  BusinessArchitectureProjector,
   CapabilityMapProjector,
   DefaultViewEngine,
   DomainMapProjector,
@@ -27,6 +28,15 @@ export const SEED_JSONL_PATHS = [
   join(DEMO_DIR, "payments-extractions.jsonl"),
   join(DEMO_DIR, "payments-relationships.jsonl"),
 ] as const;
+
+/**
+ * The curated Business-Architecture reference spine (Feature 08, #86 — ADR-0009): the
+ * hand-authored L1 domain → L2 capability skeleton the Business-Architecture Lens projects
+ * over. It is **corpus-independent** — the raw capabilities of *any* domain are classified
+ * into this same spine — so {@link seedInMemoryGraph} always loads it alongside whatever
+ * corpus `resolveSeedJsonlPaths()` selected, not just the bundled Payments demo.
+ */
+export const SPINE_JSONL_PATH = join(DEMO_DIR, "business-architecture-spine.jsonl");
 
 /** The environment knobs that point the gateway at a domain's data instead of the demo seed. */
 export interface SeedEnv {
@@ -120,7 +130,11 @@ export interface SeedOptions {
  */
 export async function seedInMemoryGraph(options: SeedOptions = {}): Promise<SeededBackend> {
   const graph = options.graph ?? new InMemoryGraphAdapter();
-  const paths = options.jsonlPaths ?? SEED_JSONL_PATHS;
+  // The Business-Architecture spine is corpus-independent (ADR-0009): always load it alongside
+  // whatever corpus was selected, so the EA lens works over the stewardship data too — not just
+  // the Payments demo. Appended once; a caller that already listed it is not double-loaded.
+  const corpus = options.jsonlPaths ?? SEED_JSONL_PATHS;
+  const paths = corpus.includes(SPINE_JSONL_PATH) ? corpus : [...corpus, SPINE_JSONL_PATH];
 
   const loader = new GraphLoader(graph);
   await loader.initialize({});
@@ -130,6 +144,7 @@ export async function seedInMemoryGraph(options: SeedOptions = {}): Promise<Seed
   const views = new DefaultViewEngine(queryService);
   views.registerProjector(new DomainMapProjector(queryService));
   views.registerProjector(new CapabilityMapProjector(queryService));
+  views.registerProjector(new BusinessArchitectureProjector(queryService));
   views.registerProjector(new BehaviourFlowProjector(queryService));
   views.registerProjector(new VendorCoverageProjector(queryService));
   views.registerProjector(new GapAnalysisProjector(queryService));

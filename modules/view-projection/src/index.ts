@@ -2,6 +2,7 @@ export * from "./types";
 export { DefaultViewEngine } from "./engine";
 export { DomainMapProjector } from "./domain-map-projector";
 export { CapabilityMapProjector } from "./capability-map-projector";
+export { BusinessArchitectureProjector } from "./business-architecture-projector";
 export { BehaviourFlowProjector } from "./behaviour-flow-projector";
 export { renderBehaviourFlowPlantUml } from "./behaviour-flow-plantuml";
 

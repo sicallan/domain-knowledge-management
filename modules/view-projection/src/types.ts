@@ -385,3 +385,63 @@ export interface GapAnalysisParams {
   /** Which gaps to list: functional (no L2), technical (no L3), or both. Defaults to `both`. */
   layer?: "functional" | "technical" | "both";
 }
+
+// ---------------------------------------------------------------------------
+// Business-Architecture view (Feature 08, #86 — ADR-0009). A second lens over the
+// capabilities: the curated `ReferenceCapability` spine (L1 domain → L2 capability)
+// with each raw `BusinessCapability` classified beneath it as an L3 function / L4
+// activity, or rejected. A **deterministic projection over spine + the materialised
+// `CapabilityClassification` judgments** — it asserts nothing new itself (ADR-0008);
+// the LLM judgment lives in the classifications, not here. Additive only.
+// ---------------------------------------------------------------------------
+
+/** Parameters accepted by the Business-Architecture projector. */
+export interface BusinessArchitectureParams {
+  /** Restrict to one L1 domain's subtree (by id or name). Omitted → every domain. */
+  root?: string;
+  /** Drop classifications below this confidence; their subjects fall to `unclassified`. */
+  minConfidence?: number;
+}
+
+/** Whether a tree node is a curated spine node or a classified raw capability. */
+export type BusinessArchitectureOrigin = "reference" | "classified";
+
+/** A node in the normalised business-architecture tree (recursive). */
+export interface BusinessArchitectureNode {
+  /** Reference node id (spine) or raw BusinessCapability id (classified leaf). */
+  id: string;
+  name: string;
+  /** 1 domain · 2 capability · 3 function · 4 activity. */
+  level: number;
+  origin: BusinessArchitectureOrigin;
+  /** Reference (spine) nodes only: the framework the curated node derives from. */
+  framework?: string;
+  /** Classified nodes only: the classifier's confidence and justification. */
+  confidence?: number | null;
+  rationale?: string;
+  /** Classified nodes only: counts of evidence attached to the underlying raw capability. */
+  counts?: CapabilityCounts;
+  /** Size of this node's subtree (excluding itself). */
+  descendantCount: number;
+  children: BusinessArchitectureNode[];
+}
+
+/** A rejected-classification tally, grouped by reason (deterministically ordered). */
+export interface BusinessArchitectureRejections {
+  count: number;
+  byReason: { reason: string; count: number }[];
+}
+
+/** Raw capabilities with no trusted placement in the tree (pending / not-yet-a-fit). */
+export interface BusinessArchitectureUnclassified {
+  count: number;
+  /** A capped, sorted sample of names — an honest "pending" affordance, never the full list. */
+  names: string[];
+}
+
+/** The Business-Architecture view output: curated domains + the rejected / unclassified buckets. */
+export interface BusinessArchitectureView {
+  domains: BusinessArchitectureNode[];
+  rejected: BusinessArchitectureRejections;
+  unclassified: BusinessArchitectureUnclassified;
+}
